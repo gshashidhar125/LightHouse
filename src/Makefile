@@ -195,13 +195,18 @@ endif
 $(BIN)/gm_comp: $(SRCS1) $(OBJS) $(HEADS)
 	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LDFLAGS)
 
+-include $(OBJS:.o=.d)
+
 libs:
 	@cd $(EXTLIBS); make
 
 $(OBJ)/%.o : %.c 
 	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MM $< > $*.d
+
 $(OBJ)/%.o : %.cc 
 	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MM $< > $*.d
 
 clean:
 	rm $(OBJ)/*.o

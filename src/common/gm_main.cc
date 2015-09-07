@@ -30,6 +30,7 @@
 
 gm_frontend FE;
 gm_cpp_gen CPP_BE;  // CPP Backend
+//gm_cuda_gen CUDA_BE;  // CPP Backend
 gm_gps_gen GPS_BE;  // GPS Backend
 gm_giraph_gen GIRAPH_BE;  // Giraph Backend
 gm_gps_gen* PREGEL_BE; // for debug
@@ -177,6 +178,11 @@ int main(int argc, char** argv) {
     } else if (gm_is_same_string(name, "cpp_omp")) {
         CPP_BE.set_target_omp(true);
         BACK_END = &CPP_BE;
+    } else if (gm_is_same_string(name, "CUDA")) {
+        CPP_BE.set_target_omp(true);
+        BACK_END = &CPP_BE;
+        /*CUDA_BE.set_target_omp(true);
+        BACK_END = &CUDA_BE;*/
     } else if (gm_is_same_string(name, "gps")) {
         BACK_END = &GPS_BE;
         PREGEL_BE = &GPS_BE;
