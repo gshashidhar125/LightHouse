@@ -20,6 +20,7 @@
 
 #include "gm_backend.h"
 #include "gm_backend_cpp.h"
+#include "gm_backend_cuda.h"
 #include "gm_backend_gps.h"
 #include "gm_backend_giraph.h"
 #ifdef COMPILE_JAVA_BACKEND
@@ -30,7 +31,7 @@
 
 gm_frontend FE;
 gm_cpp_gen CPP_BE;  // CPP Backend
-//gm_cuda_gen CUDA_BE;  // CPP Backend
+gm_cuda_gen CUDA_BE;  // CUDA Backend
 gm_gps_gen GPS_BE;  // GPS Backend
 gm_giraph_gen GIRAPH_BE;  // Giraph Backend
 gm_gps_gen* PREGEL_BE; // for debug
@@ -179,10 +180,8 @@ int main(int argc, char** argv) {
         CPP_BE.set_target_omp(true);
         BACK_END = &CPP_BE;
     } else if (gm_is_same_string(name, "CUDA")) {
-        CPP_BE.set_target_omp(true);
         BACK_END = &CPP_BE;
-        /*CUDA_BE.set_target_omp(true);
-        BACK_END = &CUDA_BE;*/
+        /*BACK_END = &CUDA_BE;*/
     } else if (gm_is_same_string(name, "gps")) {
         BACK_END = &GPS_BE;
         PREGEL_BE = &GPS_BE;

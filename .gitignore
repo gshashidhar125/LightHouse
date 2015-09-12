@@ -9,6 +9,7 @@ obj/*
 nbproject
 *.aterm
 *.a
+*.d
 
 test.gm
 test_main.cc
@@ -55,6 +56,9 @@ apps/output_java/src/runtime/_48bit
 apps/output_java/src/runtime/_64bit
 apps/output_java/src/main/_48bit
 apps/output_java/src/main/_64bit
+
+apps/src/*.cc
+apps/src/*.h
 
 etc/update_setup
 setup.mk.bak
