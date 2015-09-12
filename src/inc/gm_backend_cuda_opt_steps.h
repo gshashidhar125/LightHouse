@@ -1,15 +1,15 @@
 #include "gm_compile_step.h"
 #include "gm_backend_cuda.h"
 
-#ifndef GM_BACKEND_CPP_OPT_STEPS_H
-#define GM_BACKEND_CPP_OPT_STEPS_H
+#ifndef GM_BACKEND_CUDA_OPT_STEPS_H
+#define GM_BACKEND_CUDA_OPT_STEPS_H
 
 //-------------------------------------------
 // [Step 1]
 // Add delaration here
 // declaration of optimization steps
 //-------------------------------------------
-GM_COMPILE_STEP(gm_cuda_opt_check_feasible, "Check compiler feasiblity")
+/*GM_COMPILE_STEP(gm_cuda_opt_check_feasible, "Check compiler feasiblity")
 GM_COMPILE_STEP(gm_cuda_opt_defer, "Handle deferred writes")
 GM_COMPILE_STEP(gm_cuda_opt_sanitize_name, "Sanitize identifier")
 GM_COMPILE_STEP(gm_cuda_opt_common_nbr, "Common Neigbhor Iteration")
@@ -23,7 +23,7 @@ GM_COMPILE_STEP(gm_cuda_opt_select_seq_implementation, "Select implementation fo
 GM_COMPILE_STEP(gm_cuda_opt_select_map_implementation, "Select implementation for Map")
 GM_COMPILE_STEP(gm_cuda_opt_entry_exit, "Add procedure enter and exit")
 GM_COMPILE_STEP(gm_cuda_opt_debug, "A dummy routine for debug")
-
+*/
 //-------------------------------------------
 // [Step 2]
 //   Implement the definition in seperate files

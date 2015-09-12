@@ -10,19 +10,11 @@
 
 #include <list>
 
-/*class gm_cudalib: public gm_graph_library {
-
-public:
-    gm_cudalib() {
-    }
-
-};*/
-
-class gm_cuda_gen: /*public gm_backend,*/ public gm_code_generator {
+class gm_cuda_gen: public gm_backend, public gm_code_generator {
 
 public:
     gm_cuda_gen() :
-        gm_code_generator(Body), fname(NULL), dname(NULL), f_header(NULL), f_body(NULL)/*, _target_omp(false), _pblock(false)*/ {
+        gm_code_generator(Body), fname(NULL), dname(NULL), f_header(NULL), f_body(NULL) {
 
         init();
     }
@@ -33,37 +25,34 @@ protected:
         //init_gen_steps();
         //build_up_language_voca();
         printf("Initialization");
-        temp = 0;
     }
 
 public:
     virtual ~gm_cuda_gen() {
         //close_output_files();
-        temp = 199;
     }
 
-/*    virtual void setTargetDir(const char* dname);
+    virtual void setTargetDir(const char* dname);
     virtual void setFileName(const char* fname);
 
     virtual bool do_local_optimize();
     virtual bool do_local_optimize_lib();
     virtual bool do_generate();
 
-    virtual void do_generate_begin();
+/*    virtual void do_generate_begin();
     virtual void do_generate_end();
-
+*/
 protected:
     std::list<gm_compile_step*> opt_steps;
     std::list<gm_compile_step*> gen_steps;
 
-    virtual void build_up_language_voca();
+//    virtual void build_up_language_voca();
     virtual void init_opt_steps();
     virtual void init_gen_steps();
-*/
+
 protected:
     char *fname;
     char *dname;
-    int temp;
 
     gm_code_writer Header;
     gm_code_writer Body;

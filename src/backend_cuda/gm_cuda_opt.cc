@@ -12,7 +12,7 @@
 
 void gm_cuda_gen::init_opt_steps() {
     std::list<gm_compile_step*>& LIST = this->opt_steps;
-
+/*
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_check_feasible));
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_defer));
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_common_nbr));
@@ -25,7 +25,7 @@ void gm_cuda_gen::init_opt_steps() {
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_ind_opt_nonconf_reduce));
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_reduce_scalar));
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_reduce_field));
-    LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_debug));
+    LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_debug));*/
 }
 
 bool gm_cuda_gen::do_local_optimize() {
@@ -34,7 +34,7 @@ bool gm_cuda_gen::do_local_optimize() {
 }
 
 bool gm_cuda_gen::do_local_optimize_lib() {
-    assert(get_lib() != NULL);
-    return get_lib()->do_local_optimize();
+    //assert(get_lib() != NULL);
+    return 1;//get_lib()->do_local_optimize();
 }
 

@@ -109,6 +109,8 @@ SRCS2 =\
        gm_cpp_gen_check_rev_edge.cc\
        gm_cpplib_gen.cc \
        gm_cpplib_opt.cc\
+	   gm_cuda_gen.cc\
+	   gm_cuda_opt.cc\
        gm_gps_opt_remove_master_random_write.cc\
        gm_gps_opt_remove_master_set_iteration.cc\
        gm_gps_opt_check_reverse_edges.cc\
@@ -155,7 +157,7 @@ SRCS2 =\
        gm_giraph_lib_random_write.cc\
 
 # where to find source codes
-SRC_DIRS = common parse backend_cpp backend_gps backend_giraph frontend opt
+SRC_DIRS = common parse backend_cpp backend_cuda backend_gps backend_giraph frontend opt
 
 ifeq ($(COMPILE_JAVA_BACKEND),1)
 	CFLAGS += -DCOMPILE_JAVA_BACKEND

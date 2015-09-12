@@ -7,7 +7,6 @@
 #include "gm_builtin.h"
 #include "gm_argopts.h"
 
-/*
 void gm_cuda_gen::setTargetDir(const char* d) {
     assert(d != NULL);
     if (dname != NULL)
@@ -23,7 +22,7 @@ void gm_cuda_gen::setFileName(const char* f) {
     fname = new char[strlen(f) + 1];
     strcpy(fname, f);
 }
-
+/*
 bool gm_cuda_gen::do_local_optimize() {
     return 1;
 
@@ -31,13 +30,13 @@ bool gm_cuda_gen::do_local_optimize() {
 
 bool gm_cuda_gen::do_local_optimize_lib() {
     return 1;
-}
+}*/
 
 bool gm_cuda_gen::do_generate() {
     return 1;
 
 }
-
+/*
 void gm_cuda_gen::do_generate_begin() {
 
 }
@@ -48,12 +47,12 @@ void gm_cuda_gen::do_generate_end() {
 */
 /*void gm_cuda_gen::build_up_language_voca() {
 
-}
+}*/
 
 void gm_cuda_gen::init_gen_steps() {
 
 }
-
+/*
 void gm_cuda_gen::open_output_files() {
 
 }
@@ -79,8 +78,8 @@ void gm_cuda_gen::generate_rhs_field(ast_field* i) {
 }
 /*
 void gm_cuda_gen::generate_expr_foreign(ast_expr* e) {
-*/
-}
+
+}*/
 
 void gm_cuda_gen::generate_expr_builtin(ast_expr* i) {
 

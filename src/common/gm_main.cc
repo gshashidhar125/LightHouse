@@ -180,8 +180,8 @@ int main(int argc, char** argv) {
         CPP_BE.set_target_omp(true);
         BACK_END = &CPP_BE;
     } else if (gm_is_same_string(name, "CUDA")) {
-        BACK_END = &CPP_BE;
-        /*BACK_END = &CUDA_BE;*/
+        //BACK_END = &CPP_BE;
+        BACK_END = &CUDA_BE;
     } else if (gm_is_same_string(name, "gps")) {
         BACK_END = &GPS_BE;
         PREGEL_BE = &GPS_BE;
