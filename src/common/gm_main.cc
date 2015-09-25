@@ -241,6 +241,7 @@ int main(int argc, char** argv) {
         if (!ok) exit(EXIT_FAILURE);
     }
     gm_end_major_compiler_stage();
+    //FE.dump_tree();
 
     //----------------------------------------------------------------
     // Backend-Independnet Optimization

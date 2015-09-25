@@ -39,9 +39,9 @@ public:
     virtual bool do_local_optimize_lib();
     virtual bool do_generate();
 
-/*    virtual void do_generate_begin();
+    virtual void do_generate_begin();
     virtual void do_generate_end();
-*/
+
 protected:
     std::list<gm_compile_step*> opt_steps;
     std::list<gm_compile_step*> gen_steps;
@@ -62,6 +62,8 @@ protected:
     bool open_output_files();
     void close_output_files(bool remove_files = false);
 
+    virtual void add_include(const char* str1, gm_code_writer& Out, bool is_clib = true, const char* str2 = "");
+    virtual void add_ifdef_protection(const char* str);
     //------------------------------------------------------------------------------
     // Generate Method from gm_code_generator
     //------------------------------------------------------------------------------

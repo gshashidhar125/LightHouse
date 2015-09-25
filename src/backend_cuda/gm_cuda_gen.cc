@@ -33,18 +33,71 @@ bool gm_cuda_gen::do_local_optimize_lib() {
 }*/
 
 bool gm_cuda_gen::do_generate() {
-    return 1;
 
+    if (!open_output_files()) return false;
+
+    do_generate_begin();
+
+    bool b = gm_apply_compiler_stage(this->gen_steps);
+    if (b == false) {
+        close_output_files(true);
+        return false;
+    }
+
+    do_generate_end();
+    close_output_files();
+    return true;
 }
-/*
+
+void gm_cuda_gen::add_include(const char* string, gm_code_writer& Out, bool is_clib, const char* str2) {
+
+    Out.push("#include ");
+    if (is_clib)
+        Out.push('<');
+    else
+        Out.push('"');
+    Out.push(string);
+    Out.push(str2);
+    if (is_clib)
+        Out.push('>');
+    else
+        Out.push('"');
+    Out.NL();
+}
+
+void gm_cuda_gen::add_ifdef_protection(const char* s) {
+
+    Header.push("#ifndef GM_GENERATED_CUDA_");
+    Header.push_to_upper(s);
+    Header.pushln("_H");
+    Header.push("#define GM_GENERATED_CUDA_");
+    Header.push_to_upper(s);
+    Header.pushln("_H");
+    Header.NL();
+}
+
 void gm_cuda_gen::do_generate_begin() {
 
+    add_ifdef_protection(fname);
+    add_include("stdio.h", Header);
+    add_include("stdlib.h", Header);
+    add_include("stdint.h", Header);
+    add_include("float.h", Header);
+    add_include("limits.h", Header);
+    add_include("cmath", Header);
+    add_include("algorithm", Header);
+
+    add_include("cuda/cuda.h", Header);
+
+    Header.NL();
 }
 
 void gm_cuda_gen::do_generate_end() {
 
+    Header.NL();
+    Header.pushln("#endif");
 }
-*/
+
 /*void gm_cuda_gen::build_up_language_voca() {
 
 }*/
@@ -52,14 +105,53 @@ void gm_cuda_gen::do_generate_end() {
 void gm_cuda_gen::init_gen_steps() {
 
 }
-/*
-void gm_cuda_gen::open_output_files() {
 
+bool gm_cuda_gen::open_output_files() {
+    char temp[1024];
+    assert(dname != NULL);
+    assert(fname != NULL);
+
+    sprintf(temp, "%s/%s.h", dname, fname);
+    f_header = fopen(temp, "w");
+    if (f_header == NULL) {
+        gm_backend_error(GM_ERROR_FILEWRITE_ERROR, temp);
+        return false;
+    }
+    Header.set_output_file(f_header);
+
+    sprintf(temp, "%s/%s.cpp", dname, fname);
+    f_body = fopen(temp, "w");
+    if (f_body == NULL) {
+        gm_backend_error(GM_ERROR_FILEWRITE_ERROR, temp);
+        return false;
+    }
+    Body.set_output_file(f_body);
+    //get_lib()->set_code_writer(&Body);
+    return true;
 }
 
 void gm_cuda_gen::close_output_files(bool remove_files) {
 
-}*/
+    char temp[1024];
+    if (f_header != NULL) {
+        Header.flush();
+        fclose(f_header);
+        if (remove_files) {
+            sprintf(temp, "rm %s/%s.h", dname, fname);
+            system(temp);
+        }
+        f_header = NULL;
+    }
+    if (f_body != NULL) {
+        Body.flush();
+        fclose(f_body);
+        if(remove_files) {
+            sprintf(temp, "rm %s/%s.cpp", dname, fname);
+            system(temp);
+        }
+        f_body = NULL;
+    }
+}
 
 void gm_cuda_gen::generate_lhs_id(ast_id* i) {
 
