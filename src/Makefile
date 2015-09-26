@@ -197,31 +197,25 @@ endif
 $(BIN)/gm_comp: $(SRCS1) $(OBJS) $(HEADS)
 	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LDFLAGS)
 
--include $(OBJS:.o=.d)
+DEPS := $(OBJS:.o=.d)
+-include $(DEPS)
 
 libs:
 	@cd $(EXTLIBS); make
 
 $(OBJ)/%.o : %.c 
 	$(CC) $(CFLAGS) -c $< -o $@
-	$(CC) $(CFLAGS) -MM $< > $*.d
-	@cp -f $*.d $*.d.tmp
-	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
-		sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
-	@rm -f $*.d.tmp
+#	$(CC) $(CFLAGS) -MM $< > $(OBJ)/$*.d
+	$(CC) $(CFLAGS) -MM -MT $@ -MF $(patsubst %.o,%.d,$@) $<
 
 
 $(OBJ)/%.o : %.cc 
 	$(CC) $(CFLAGS) -c $< -o $@
-	$(CC) $(CFLAGS) -MM $< > $*.d
-	echo $*, $<, $@, $OBJ >> filedump
-	@cp -f $*.d $*.d.tmp
-	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
-		sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
-	@rm -f $*.d.tmp
+#	$(CC) $(CFLAGS) -MM $< > $(OBJ)/$*.d
+	$(CC) $(CFLAGS) -MM -MT $@ -MF $(patsubst %.o,%.d,$@) $<
 
 clean:
-	rm $(OBJ)/*.o
+	rm $(OBJ)/*.o $(OBJ)/*.d
 
 clean_all: veryclean
 
