@@ -1,0 +1,981 @@
+adamicAdar2.gm
+Procedure adamicAdar2(
+    G : Graph;
+    aa : E_P <Double>(G))
+{
+    //G.aa = 0;
+    N_P<Int> cnt;
+    G.cnt = 0;
+
+    Foreach (to : G.Nodes)
+    {
+        Foreach (n : to.InNbrs)
+        {
+            Foreach (from : to.InNbrs)
+            {
+                If (from.HasEdgeTo(n)) 
+                {
+                    //Edge e = from.ToEdge();
+                    //e.aa += 1 / Log(n.Degree());
+
+                    from.cnt ++;
+                }
+            }
+        }
+    }
+
+}
+
+
+
+
+adamicAdar.gm
+/*
+Proc adamicAdar(G:Graph, aa: E_P<Double>)
+{
+    Foreach (e:G.Edges)
+    {
+        Node from = e.FromNode();
+        Node to = e.ToNode();
+       
+        e.aa = Sum(n: from.CommonNbrs(to)) {1 / Log(n.NumNbrs())};
+    }
+}
+
+Proc adamicAdar2(G:Graph, aa: E_P<Double>)
+{
+    Foreach (e:G.Edges)
+    {
+        Node from = e.FromNode();
+        Node to = e.ToNode();
+       
+        e.aa = Sum(n: from.Nbrs)(n.IsNbrFrom(to)) {1 / Log(n.NumNbrs())};
+    }
+}
+*/
+
+Proc adamicAdar(G:Graph; aa: E_P<Double>)
+{
+    Foreach (e:G.Edges)
+    {
+        Node from = e.FromNode();
+        Node to = e.ToNode();
+       
+        // In C++ backend, the compiler optimizes below
+        e.aa = Sum(n: from.Nbrs)(n.IsNbrFrom(to)) {1 / Log(n.NumNbrs())};
+
+        // into 
+        // e.aa = Sum(n: from.CommonNbrs(to)) {1 / Log(n.NumNbrs())};
+
+    }
+}
+
+
+
+avg_teen_cnt.gm
+// The example used in GPS paper
+Procedure avg_teen_cnt(
+        G: Graph, 
+        age, teen_cnt: N_P<Int>,
+        K: Int) : Float
+{
+    Foreach(n: G.Nodes) {
+      n.teen_cnt = Count(t:n.InNbrs)(t.age>=10 && t.age<20);
+    }
+
+    Float avg = (Float) Avg(n: G.Nodes)(n.age>K){n.teen_cnt};
+    Return avg;
+}
+
+
+
+b2.gm
+// Test of DFS
+Proc P(G: Graph, A,B: N_P<Int>, s: Node)
+{
+    InDFS(t:G^.Nodes From s)
+    {
+        t.A = t.B + 1;
+    }
+    InPost
+    {
+        t.B = t.A + 1;
+    }
+}
+
+
+
+bc_adj.gm
+
+//-------------------------------------------------------------
+// Computation of estimiated betweenness centrality
+//-------------------------------------------------------------
+Procedure comp_BC(G: Graph, BC: N_P<Float>) 
+{
+  G.BC = 0; // Initialize
+
+  For (s: G.Nodes) { 
+    // temporary values per Node
+    Node_Property<Float> sigma;
+    Node_Property<Float> delta;
+    G.sigma = 0;
+    s.sigma = 1;
+
+    // BFS order iteration from s
+    InBFS(v: G.Nodes From s)(v != s) {
+       // Summing over BFS parents
+       v.sigma = Sum(w:v.UpNbrs) { w.sigma };
+    }
+    InReverse(v != s) { // Reverse-BFS order iteration to s
+      v.delta =  // Summing over BFS children
+         Sum (w:v.DownNbrs) {
+            v.sigma / w.sigma * (1+ w.delta) };
+
+      v.BC += v.delta @ s; // accumulate BC
+    }
+  }
+}
+
+
+
+
+bc.gm
+
+//-------------------------------------------------------------
+// Computation of estimiated betweenness centrality
+//-------------------------------------------------------------
+Procedure comp_BC(G: Graph, BC: N_P<Float>, Seeds: Node_Sequence) 
+{
+  G.BC = 0; // Initialize
+
+  For (s: Seeds.Items) { 
+
+    // temporary values per Node
+    Node_Property<Float> sigma;
+    Node_Property<Float> delta;
+    G.sigma = 0;
+    s.sigma = 1;
+
+    // BFS order iteration from s
+    InBFS(v: G.Nodes From s) {
+       // Summing over BFS parents
+       v.sigma = Sum(w:v.UpNbrs) { w.sigma };
+    }
+    InReverse { // Reverse-BFS order iteration to s
+      v.delta =  // Summing over BFS children
+         Sum (w:v.DownNbrs) {
+            v.sigma / w.sigma * (1+ w.delta) };
+
+      v.BC += v.delta @ s; // accumulate BC
+    }
+  }
+}
+
+
+
+
+bc_random.gm
+//-------------------------------------------------------------
+// Computation of estimated betweenness centrality
+//-------------------------------------------------------------
+Procedure bc_random(G: Graph, BC: N_P<Float>, K:Int)
+{
+  G.BC = 0; // Initialize
+
+  Int k = 0;
+  While (k < K) {
+    Node s = G.PickRandom();
+
+    // temporary values per Node
+    Node_Property<Float> sigma;
+    Node_Property<Float> delta;
+    G.sigma = 0;
+    s.sigma = 1;
+
+    // BFS order iteration from s
+    InBFS(v: G.Nodes From s) {
+       // Summing over BFS parents
+       v.sigma = Sum(w:v.UpNbrs) { w.sigma };
+    }
+    InReverse { // Reverse-BFS order iteration to s
+      v.delta =  // Summing over BFS children
+         Sum (w:v.DownNbrs) {
+            v.sigma / w.sigma * (1+ w.delta) };
+
+      v.BC += v.delta ; // accumulate BC
+    }
+
+    k++;
+  }
+}
+
+
+
+bidir_dijkstra.gm
+Procedure bidir_dijkstra (G: Graph,
+        Weight: E_P<Int>,
+        src, dst: Node;
+        Parent: N_P<Node>,
+        ParentEdge: N_P<Edge>) : Bool
+{
+    // Temporary data structures
+    N_P<Node> RParent;
+    N_P<Edge> RParentEdge;
+    N_P<Bool> FFinalized;
+    N_P<Bool> RFinalized;
+    Map<Node, Int> FReachable;
+    Map<Node, Int> RReachable;
+    N_P<Int> FCost;
+    N_P<Int> RCost;
+
+    // Initializations
+    G.Parent = NIL;
+    G.RParent = NIL;
+    G.FFinalized = False;
+    G.RFinalized = False;
+    G.FCost = +INF;
+    G.RCost = +INF;
+    FReachable[src] = 0;
+    RReachable[dst] = 0;
+    src.FCost = 0;
+    dst.RCost = 0;
+
+    /*
+     *  Perform Dijkstra algorithm starting from src and dst
+     *      one step at a time in one of the directions.
+     *      Choose the direction with lesser frontier nodes for expansion.
+     *  Store the shortest path found so far between src and dst in minCost.
+     *  When minCost is < Lf + Lr, stop both the searches
+     *      Lf is the min distance discovered in the latest forward search.
+     *      Lr is the min distance discovered in the latest reverse search.
+     *  After the first path between src and dst has been found, prune the search space as follows:
+     *      Suppose you get node u from the Priority Queue in forward search
+     *          and you are looking to expand u to a node v.
+     *          If DistanceFromSrc(u) + weight(u,v) + Lr > minCost, do no expand to v.
+     *      Do the same in reverse search too.
+     */
+    Int curMinFCost = 0;
+    Int curMinRCost = 0;
+    Int minCost = +INF;
+    Node mid = NIL;
+    Bool terminate = False;
+    While ( !terminate && (FReachable.Size() != 0 || RReachable.Size() != 0) ) {
+
+        If (FReachable.Size() != 0 
+                && (FReachable.Size() <= RReachable.Size() || RReachable.Size() == 0) ) {
+            Node(G) fnext = FReachable.GetMinKey();
+            FReachable.Remove(fnext);
+            fnext.FFinalized = True;
+            curMinFCost = fnext.FCost;
+            If (curMinFCost + curMinRCost > minCost) {
+                terminate = True;
+            }
+
+            Int fdist = fnext.FCost;
+            For(v: fnext.Nbrs) (!v.FFinalized) {
+                Edge e = v.ToEdge();
+                If (fdist + e.Weight + curMinRCost <= minCost) {
+                    If (v.FCost > fdist + e.Weight) {
+                        v.FCost = fdist + e.Weight;
+                        FReachable[v] = v.FCost;
+                        v.Parent = fnext;
+                        v.ParentEdge = e;
+                        If (v.RCost != +INF) {
+                            Int newCost = v.FCost + v.RCost;
+                            <minCost; mid> min= <newCost; v>;
+                        }
+                    }
+                }
+            }
+        } Else If (RReachable.Size() != 0 
+                && (RReachable.Size() <= FReachable.Size() || FReachable.Size() == 0) ) {
+            Node(G) rnext = RReachable.GetMinKey();
+            RReachable.Remove(rnext);
+            rnext.RFinalized = True;
+            curMinRCost = rnext.RCost;
+            If (curMinFCost + curMinRCost > minCost) {
+                terminate = True;
+            }
+                
+            Int rdist = rnext.RCost;
+            For(v: rnext.InNbrs) (!v.RFinalized) {
+                Edge e = v.ToEdge();
+                If (rdist + e.Weight + curMinFCost <= minCost) {
+                    If (v.RCost > rdist + e.Weight) {
+                        v.RCost = rdist + e.Weight;
+                        RReachable[v] = v.RCost;
+                        v.RParent = rnext;
+                        v.RParentEdge = e;
+                        If (v.FCost != +INF) {
+                            Int newCost = v.FCost + v.RCost;
+                            <minCost; mid> min= <newCost; v>;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // If a path was found
+    If (mid != NIL) {
+        // Update the 'Parent' and 'ParentEdge' property of all the nodes in the path from mid to dst
+        Node cur = mid;
+        While (cur != dst) {
+            Node prev = cur.RParent;
+            prev.Parent = cur;
+            prev.ParentEdge = cur.RParentEdge;
+            cur = prev;
+        }
+
+        Return True;
+    }
+    
+    // No path was found
+    Return False;
+}
+
+Procedure get_path(G: Graph, src, dst: Node, prev_node: N_P<Node>, prev_edge: N_P<Edge>(G), edge_cost: E_P<Int>(G); Q: Node_Seq) : Int {
+    Int total_cost = 0;
+    Node(G) n = dst;
+    If (dst.prev_node != NIL) {
+        While (n != src) {
+            Q.PushFront(n);
+            Edge(G) e = n.prev_edge;
+            total_cost += e.edge_cost;
+            n = n.prev_node;
+        }
+    }
+    Return total_cost;
+}
+
+
+
+
+communities.gm
+Procedure communities(G: Graph, Comm : N_P<Node>) 
+{	
+   	Foreach(x: G.Nodes) 
+      x.Comm = x;
+
+   	Bool finished = True;
+   	Do {
+       	finished = True;
+       	// Propagate and change community
+       	Foreach(x: G.Nodes) {
+       		Map<Node, Int> T;
+       		
+       		Foreach(y: x.Nbrs) {
+       			Node source = y.Comm;
+       			T[source] += 1;
+       		}
+       		
+       		If (!T.HasMaxValue(x.Comm)) {
+       			x.Comm = T.GetMaxKey();
+       			finished = False;
+       		}
+       	}
+    } While (!finished);
+}
+
+
+conduct.gm
+Proc conduct(G: Graph, member: N_P<Int>, num: Int) : Float
+{
+    Int Din, Dout, Cross;
+
+    Din  = Sum(u:G.Nodes)(u.member == num){u.Degree()};
+    Dout = Sum(u:G.Nodes)(u.member != num){u.Degree()};
+    Cross = Sum(u:G.Nodes)(u.member == num){ Count(j:u.Nbrs)(j.member != num)};
+
+    Float m = (Din < Dout) ? Din : Dout;  
+    If (m == 0) 
+    	Return (Cross == 0) ? 0.0 : INF;
+    Else 
+    	Return (Cross / m);
+}
+
+
+
+hop_dist.gm
+
+// This routine is, in fact, BFS 
+Procedure hop_dist(G:Graph, dist:N_P<Int>, root: Node)
+{
+    N_P<Bool> updated;
+    N_P<Bool> updated_nxt;
+    N_P<Int>  dist_nxt;
+    Bool fin = False;
+
+    G.dist = (G == root) ? 0 : +INF;
+    G.updated = (G == root) ? True: False;
+    G.dist_nxt = G.dist;
+    G.updated_nxt = G.updated;
+
+    While(!fin) {
+        fin = True;
+
+        Foreach(n: G.Nodes)(n.updated) {
+            Foreach(s: n.Nbrs) {
+                //Edge(G) e = s.ToEdge(); // the edge to s
+                // updated_nxt becomes true only if dist_nxt is actually updated
+                <s.dist_nxt; s.updated_nxt> min= <n.dist + 1; True>; 
+            }
+        }
+
+        G.dist = G.dist_nxt;
+        G.updated = G.updated_nxt;
+        G.updated_nxt = False;
+        fin = ! Exist(n: G.Nodes){n.updated};
+    }
+}
+
+
+
+kosaraju.gm
+// Find strongly connected components using Kosaraju's Algorithm
+// Returns number of SCC
+Proc kosaraju (G: Graph, mem: N_P<Int>) : Int
+{
+    // Initialize membership
+    G.mem = -1;
+
+    N_P<Bool> Checked;
+    G.Checked = False;
+
+    // [Phase 1]
+    // Obtain reverse-post-DFS-order of node sequence.
+    // Node_Order can be also used here but Node_Seq is faster
+    Node_Seq Seq; 
+    For(t:G.Nodes) (!t.Checked)
+    {
+        InDFS(n:G.Nodes From t)[!n.Checked] 
+        {} // do nothing at pre-visit
+        InPost{ // check at post-visit
+            n.Checked = True;
+            Seq.PushFront(n);
+        }
+    }
+
+    // [Phase 2]
+    // Starting from each node in the sequence
+    //   Do BFS on the transposed graph G^.
+    //   and every nodes that are (newly) visited compose one SCC.
+    Int compId = 0;
+    For(t:Seq.Items)(t.mem == -1)
+    {
+        InBFS(n:G^.Nodes From t)[n.mem == -1] 
+        {
+            n.mem = compId;
+        }
+        compId++;
+    }
+
+    Return compId;
+}
+
+
+
+pagerank.gm
+Procedure pagerank(G: Graph, e,d: Double, max: Int;
+                   pg_rank: Node_Prop<Double>)
+{
+    Double diff;
+    Int cnt = 0;
+    Double N = G.NumNodes();
+    G.pg_rank = 1 / N;
+    Do {
+        diff = 0.0;
+        Foreach (t: G.Nodes) {
+            Double val = (1-d) / N + d* 
+                Sum(w: t.InNbrs) {
+                   w.pg_rank / w.OutDegree()} ;
+
+            diff += | val - t.pg_rank |;
+            t.pg_rank <= val @ t;
+        }
+        cnt++;
+    } While ((diff > e) && (cnt < max));
+}
+
+
+
+
+parallel_random_walk_jump_sampling.gm
+Procedure parallel_random_walk_jump_sampling(
+    G: Graph, p_size, p_jump: Float, 
+    num_tokens: Int; Selected : N_P<Bool>)
+{
+    N_P<Int> Token, TokenNxt;
+
+    G.Token = 0;
+    G.TokenNxt = 0;
+    G.Selected = False;
+
+/*
+    Int i = 0;
+    While (i < num_tokens) {
+        Node n = G.PickRandom();
+        n.Token =1;
+    }
+*/
+
+    Node_Set S;
+    Do {
+        Node n = G.PickRandom();
+        S.Add(n);
+    } While(S.Size() < num_tokens);
+    S.Token = 1;
+
+
+    Long N = G.NumNodes() * p_size;
+    Long count = 0;
+    While (count < N)
+    {
+        Foreach(n: G.Nodes)(n.Token > 0) 
+        {
+            If (!n.Selected) {n.Selected = True; count ++;}
+            While (n.Token > 0) {
+                If ((n.Degree() == 0) || (Uniform() < p_jump)) {
+                    Node m = G.PickRandom();
+                    m.TokenNxt ++;
+                }
+                Else {
+                    //Node m = G.PickRandom();
+                    Node m = n.PickRandomNbr();
+                    m.TokenNxt ++;
+                }
+                n.Token--; 
+            }
+        }
+
+        G.Token = G.TokenNxt;
+        G.TokenNxt = 0;
+    }
+}
+
+
+
+potential_friends.gm
+Procedure potential_friends(G: Graph, potFriend: N_P<Node_Set>(G))
+{
+	Foreach(v: G.Nodes) 
+   		Foreach(u: v.Nbrs) (u != v)
+			Foreach(w: u.Nbrs) (w != u && w != v)
+				If (!v.HasEdgeTo(w))
+					v.potFriend.Add(w);
+}
+
+
+random_bipartite_matching.gm
+Proc random_bipartite_matching(
+        G: Graph,               // Graph is a bipartite
+        isLeft : N_P<Bool>,  // every edge is from left node to right node
+        Match: N_P<Node>     // result: match of the node
+) : Int
+{
+    Int count = 0;
+    Bool finished = False;
+    N_P<Node> Suitor;
+
+    G.Match = NIL;
+    G.Suitor = NIL;
+
+    While (!finished) {
+        finished = True;
+
+        // Left node shoots a proposal to its every unmarried neighbor
+        Foreach(n: G.Nodes)(n.isLeft && n.Match == NIL) {
+            Foreach(t: n.Nbrs)(t.Match == NIL) {
+                t.Suitor = n;   // intended write-write conflict. 
+                                // Only one will be make effect, though.
+                finished &= False;  
+            }
+        }
+
+        // Right node accepts only one and replies
+        Foreach(t: G.Nodes)(!t.isLeft && t.Match == NIL) {
+            If (t.Suitor != NIL) {
+                Node n = t.Suitor; // the lucky chosen one
+                n.Suitor = t;         // Now replies I'm available
+                t.Suitor = NIL;       // clear my suitor for future use
+            }
+        }
+
+        // Left node accepts only one and replies
+        Foreach(n: G.Nodes)(n.isLeft && n.Match == NIL) {
+            If (n.Suitor != NIL) {
+                Node t = n.Suitor; // the lucky chosen one
+                n.Match = t;          
+                t.Match = n;
+                count++;        // now matched!
+            }
+        }
+    }
+
+    Return count;
+}
+
+
+
+random_degree_node_sampling.gm
+Procedure random_degree_node_sampling(G: Graph, N: Int, S: Node_Set)
+{
+   Node_Prop<Double> prob;
+   Long degSum = Sum(n: G.Nodes) {n.Degree()};
+   G.prob = G.Degree() / (Double) degSum * N;
+   Foreach(v: G.Nodes) {
+       Double dice = Uniform();
+       If (dice < v.prob)
+           S.Add(v);
+   }
+}
+
+
+random_node_sampling.gm
+Procedure random_node_sampling(G: Graph, N: Int, S: Node_Set) 
+{
+	Double prob = 1 / (Double) N;
+	Foreach(v: G.Nodes) {
+		Double dice = Uniform();
+		If (dice < prob)
+        	S.Add(v);
+   }
+}
+
+
+random_walk_sampling_with_random_jump.gm
+Procedure random_walk_sampling_with_random_jump(G: Graph, N: Int, c : Double, S: Node_Set)
+{
+   Node(G) n = G.PickRandom();
+   Int count = 0;
+   While (count < N) {
+     S.Add(n);  
+     count++;
+     If ((n.Degree() == 0) || (Uniform() < c)) {
+         n = G.PickRandom();
+     }
+     Else {
+         n = n.PickRandomNbr(); 
+     }
+   }        
+}
+
+
+sssp_dijkstra.gm
+Procedure dijkstra(G:Graph, Len:E_P<Int>, root, dest: Node; Parent: N_P<Node>, ParentEdge: N_P<Edge>) : Bool
+{
+    N_P<Bool> Reached;
+    G.Parent = NIL;
+    G.Reached = False;
+
+    //-------------------------------
+    // look up the node
+    //-------------------------------
+    Map<Node, Int> Reachable;
+    Reachable[root] = 0;            // Add root to reachable set
+
+    //-------------------------------
+    // look up the node
+    //-------------------------------
+    Bool found = False;
+    Bool failed = False;
+    While (!found && !failed)
+    {
+        If (Reachable.Size() == 0) 
+        {
+            failed = True;
+        }
+        Else {
+
+            Node(G) next = Reachable.GetMinKey();
+            If (next == dest)  {
+                found = True;
+            }
+            Else {
+                next.Reached = True;
+                Int dist = Reachable[next];
+                Reachable.Remove(next);
+
+                For(v: next.Nbrs)(!v.Reached) {
+                    Edge e = v.ToEdge();
+                    If (!Reachable.HasKey(v)) {
+                        Reachable[v] = dist + e.Len;
+                        v.Parent = next;
+                        v.ParentEdge = e;
+                    }
+                    Else If (Reachable[v] > dist + e.Len) {
+                        Reachable[v] = dist + e.Len;
+                        v.Parent = next;
+                        v.ParentEdge = e;
+                    }
+                }
+            }
+        }
+    }
+
+    // Return False if not reachable
+    Return !failed;
+}
+
+// get the specific path instance
+Procedure get_path(G: Graph, begin,end: Node, prev_node: N_P<Node>, prev_edge: N_P<Edge>(G), edge_cost: E_P<Int>(G), Q: Node_Seq): Int
+{
+   Int total_cost = 0;
+   Node(G) n = end;
+   If (end.prev_node != NIL) {
+       While(n != begin) {
+           Q.PushFront(n);
+           Edge(G) e = n.prev_edge;
+           total_cost += e.edge_cost;
+           n = n.prev_node;
+       }
+   }
+   Return total_cost;
+}
+
+
+
+sssp.gm
+Procedure sssp(G:Graph, dist:N_P<Int>, len:E_P<Int>, root: Node)
+{
+    N_P<Bool> updated;
+    N_P<Bool> updated_nxt;
+    N_P<Int>  dist_nxt;
+    Bool fin = False;
+
+    G.dist = (G == root) ? 0 : +INF;
+    G.updated = (G == root) ? True: False;
+    G.dist_nxt = G.dist;
+    G.updated_nxt = G.updated;
+
+    While(!fin) {
+        fin = True;
+
+        Foreach(n: G.Nodes)(n.updated) {
+            Foreach(s: n.Nbrs) {
+                Edge e = s.ToEdge(); // the edge to s
+                // updated_nxt becomes true only if dist_nxt is actually updated
+                <s.dist_nxt; s.updated_nxt> min= <n.dist + e.len; True>; 
+            }
+        }
+
+        G.dist = G.dist_nxt;
+        G.updated = G.updated_nxt;
+        G.updated_nxt = False;
+        fin = ! Exist(n: G.Nodes){n.updated};
+    }
+}
+
+
+
+sssp_path_adj.gm
+Procedure sssp_path(G:Graph, dist: N_P<Double>, edge_cost: E_P<Double>, root: Node, end: Node, prev_node: N_P<Node>, prev_edge: N_P<Edge>)
+{
+    N_P<Bool> updated;
+    N_P<Bool> updated_nxt;
+    N_P<Double>  dist_nxt;
+    Bool fin = False;
+
+    G.dist = (G == root) ? 0 : +INF;
+    G.updated = (G == root) ? True: False;
+    G.dist_nxt = G.dist;
+    G.updated_nxt = G.updated;
+    G.prev_node = NIL;
+    G.prev_edge = NIL;
+
+    While(!fin) {
+        fin = True;
+
+        Foreach(n: G.Nodes)(n.updated && n.dist < end.dist) {
+            Foreach(s: n.Nbrs) {
+                Edge(G) e = s.ToEdge(); // the edge to s
+                If (n.dist + e.edge_cost < end.dist) {
+                    // updated_nxt becomes true only if dist_nxt is actually updated
+                    <s.dist_nxt; s.updated_nxt, s.prev_node, s.prev_edge> min= <n.dist + e.edge_cost; True, n, e>;
+                }
+            }
+        }
+
+        G.dist = G.dist_nxt;
+        G.updated = G.updated_nxt;
+        G.updated_nxt = False;
+        fin = ! Exist(n: G.Nodes){n.updated};
+    }
+}
+
+// get the specific path instance
+Procedure get_path(G: Graph, begin,end: Node, prev_node: N_P<Node>, prev_edge: N_P<Edge>(G), edge_cost: E_P<Double>(G), Q: Node_Seq): Double
+{
+   Double total_cost = 0.0;
+   Node(G) n = end;
+   If (end.prev_node != NIL) {
+       While(n != begin) {
+           Q.PushFront(n);
+           Edge(G) e = n.prev_edge;
+           total_cost += e.edge_cost;
+           n = n.prev_node;
+       }
+   }
+   Return total_cost;
+}
+
+
+sssp_path.gm
+Procedure sssp_path(G:Graph, dist: N_P<Int>, len: E_P<Int>, root: Node, prev: N_P<Node>)
+{
+    N_P<Bool> updated;
+    N_P<Bool> updated_nxt;
+    N_P<Int>  dist_nxt;
+    Bool fin = False;
+
+    G.dist = (G == root) ? 0 : +INF;
+    G.updated = (G == root) ? True: False;
+    G.dist_nxt = G.dist;
+    G.updated_nxt = G.updated;
+    G.prev = NIL;
+
+    While(!fin) {
+        fin = True;
+
+        Foreach(n: G.Nodes)(n.updated) {
+            Foreach(s: n.Nbrs) {
+                Edge(G) e = s.ToEdge(); // the edge to s
+                // updated_nxt becomes true only if dist_nxt is actually updated
+                <s.dist_nxt; s.updated_nxt, s.prev> min= <n.dist + e.len; True, n>;
+            }
+        }
+
+        G.dist = G.dist_nxt;
+        G.updated = G.updated_nxt;
+        G.updated_nxt = False;
+        fin = ! Exist(n: G.Nodes){n.updated};
+    }
+}
+
+// get the specific path instance
+Procedure get_path(G: Graph, begin,end: Node, prev: N_P<Node>, Q: Node_Seq)
+{
+   Node(G) t = end;
+   If (end.prev != NIL) {
+       While(t != begin) {
+           Q.PushFront(t);
+           t = t.prev;     
+       }
+       Q.PushFront(t);
+   }
+}
+
+
+tarjan_scc.gm
+Procedure Tarjan (G:Graph; SCC: N_P<Node> )
+{
+    N_P<Bool> InStack;
+    N_P<Node> LowLink;
+    N_Q Stack;
+
+    G.SCC = NIL;
+    G.InStack = False;
+
+    // DFS
+    For(n: G.Nodes) (n.SCC == NIL)
+    {
+        InDFS(t: G.Nodes From n)[!t.InStack]
+        {
+            // previsit
+            Stack.PushBack(t);
+            t.InStack = True;
+            t.LowLink = t;
+        }
+        InPost 
+        {
+            // post visit
+            For(k: t.Nbrs) {
+                If (k.LowLink < t.LowLink) 
+                    t.LowLink = k.LowLink;
+            }
+
+            // identified an SCC
+            If (t.LowLink == t) {
+                Node w = Stack.PopBack();
+                While (w != t) {
+                    w.InStack = False;
+                    w.SCC = t;
+                    w = Stack.PopBack();
+                }
+
+                w.InStack = False;
+                w.SCC = t;
+            }
+        }
+    }
+}
+
+
+
+triangle_counting_directed.gm
+Procedure triangle_counting_directed(G: Graph): Long
+{
+    // directed version
+	Long T=0;
+	Foreach(v: G.Nodes) 
+    	Foreach(u: v.Nbrs) {
+			Foreach(w: v.Nbrs) (w > u) {
+    			If (w.HasEdgeFrom(u) || (w.HasEdgeTo(u))) 
+       				T ++;
+            }
+        }
+
+   	Return T;   
+}
+
+
+
+triangle_counting.gm
+Procedure triangle_counting(G: Graph): Long
+{
+    // undirected version
+	Long T;
+	Foreach(v: G.Nodes) 
+    	Foreach(u: v.Nbrs) (u > v) {
+			Foreach(w: v.Nbrs) (w > u) {
+    			If ((w.HasEdgeTo(u))) 
+       				T += 1;
+            }
+        }
+   	Return T;   
+}
+
+
+
+v_cover.gm
+Proc v_cover(G: Graph, select: E_P<Bool>) : Int
+{
+    N_P<Int> Deg;
+    N_P<Bool> Covered;
+
+    G.Deg = G.Degree() + G.InDegree();
+    G.Covered = False;
+    G.select = False;
+    Int remain = (Int) (G.NumEdges()*2);
+    While(remain > 0) {
+        Int max_val = 0;
+        Node(G) from, to;
+        Edge(G) e;
+        Foreach(s: G.Nodes) {
+            Foreach(t: s.Nbrs)(!(s.Covered && t.Covered)) {
+                <max_val; from, to, e> max= <s.Deg + t.Deg; s, t, t.ToEdge()>;
+            }
+        }
+        remain = remain - max_val;
+        from.Deg = 0;
+        to.Deg = 0;
+        e.select = True;
+        from.Covered =True;
+        to.Covered = True;
+    }
+    Int c = Count(t:G.Nodes)(t.Covered);
+    Return c;
+}
+
+
+

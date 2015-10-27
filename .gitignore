@@ -10,6 +10,8 @@ nbproject
 *.aterm
 *.a
 *.d
+dump
+dump[0-9]
 
 test.gm
 test_main.cc
@@ -58,6 +60,7 @@ apps/output_java/src/main/_48bit
 apps/output_java/src/main/_64bit
 
 apps/src/*.cc
+apps/src/*.cpp
 apps/src/*.h
 
 etc/update_setup

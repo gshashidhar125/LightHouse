@@ -22,7 +22,7 @@ public:
 protected:
     void init() {
         //init_opt_steps();
-        //init_gen_steps();
+        init_gen_steps();
         //build_up_language_voca();
         printf("Initialization");
     }
@@ -120,8 +120,10 @@ public:
     //virtual void generate_sent_block_enter(ast_sentblock *b);
     //virtual void generate_sent_block_exit(ast_sentblock* b);
 /*
-    virtual void generate_idlist(ast_idlist *i);
+    virtual void generate_idlist(ast_idlist *i);*/
     virtual void generate_proc(ast_procdef* proc);
-*/
+
 };
+
+extern gm_cuda_gen CUDA_BE;
 #endif

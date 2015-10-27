@@ -15,6 +15,7 @@ GM_COMPILE_STEP(gm_cuda_gen_check_bfs, "Check BFS routines")
 GM_COMPILE_STEP(gm_cuda_gen_misc_check, "Checking small assumptions")
 GM_COMPILE_STEP(gm_cuda_gen_check_usermain, "Checking items for user main generation")
 GM_COMPILE_STEP(gm_cuda_gen_check_rev_edge, "Checking reverse edges") */
+GM_COMPILE_STEP(gm_cuda_gen_identify_par_regions, "Identify Parallel regions in each procedure")
 GM_COMPILE_STEP(gm_cuda_gen_proc, "Creating CUDA source for each procedure")
 
 //-------------------------------------------
