@@ -122,6 +122,7 @@ public:
 /*
     virtual void generate_idlist(ast_idlist *i);*/
     virtual void generate_proc(ast_procdef* proc);
+    virtual void generate_kernel_function(ast_procdef* proc);
 
 };
 

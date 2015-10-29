@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string>
 #include "gm_backend_cuda.h"
 #include "gm_error.h"
 #include "gm_code_writer.h"
@@ -90,6 +91,11 @@ void gm_cuda_gen::do_generate_begin() {
     add_include("cuda/cuda.h", Header);
 
     Header.NL();
+
+    char temp[1024];
+    sprintf(temp, "%s.h", fname);
+    add_include(temp, Body, false);
+    Body.NL();
 }
 
 void gm_cuda_gen::do_generate_end() {
@@ -109,12 +115,20 @@ void gm_cuda_gen::init_gen_steps() {
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_gen_proc));
 }
 
+enum memory {
+    CPUMemory,
+    GPUMemory,
+};
+
 class symbol {
 
 public:
     symbol(ast_node* n, ast_typedecl* t) {
         node = n;
         type = t;
+        parent = NULL;
+        memLoc = CPUMemory;
+        isIterator = false;
     }
 
     std::string name;
@@ -122,16 +136,31 @@ public:
     ast_typedecl* type;
     symbol* parent;
     std::list<symbol*> children;
+    memory memLoc;
+    bool isIterator;
+    int iterType;
 
     symbol* getParent() {   return parent;  }
     void setParent(symbol* p) { parent = p; }
 
+    memory getMemLoc() {    return memLoc;  }
+    void setMemLoc(memory loc) {
+        memLoc = loc;
+    }
+
     int getType() { return type->get_typeid();  }
+    ast_typedecl* getTypeDecl() { return type;  }
     char* getName() { 
         if (node->get_nodetype() == AST_ID) {
             return ((ast_id*)node)->get_orgname();   
         }
     }
+
+    bool isSymbolIterator() {   return isIterator;  }
+    void setSymbolIterator(bool s) {isIterator = s; }
+
+    bool getSymbolIterType() {   return iterType;   }
+    void setSymbolIteratorType(int s) {iterType = s; }
 
     symbol* checkAndAdd(ast_id* secondField) {
 
@@ -142,12 +171,52 @@ public:
         }
         symbol* newSymbol = new symbol(secondField, secondField->getTypeInfo());
         children.push_back(newSymbol);
-        printf("Added New child symbol %s to %s\n", newSymbol->getName(), getName());
         return newSymbol;
     }
 };
 
+bool isSameFieldNames(ast_field* f1, ast_field* f2) {
+    ast_id* id1 = f1->get_first();
+    ast_id* id2 = f2->get_first();
+    if (!(strcmp(id1->get_orgname(), id2->get_orgname()))) {
+        id1 = f1->get_second();
+        id2 = f2->get_second();
+        if (!(strcmp(id1->get_orgname(), id2->get_orgname()))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool sameVariableName(ast_node* n1, ast_node* n2) {
+
+    if (n1->get_nodetype() != n2->get_nodetype())
+        return false;
+    if (n1->get_nodetype() == AST_ID) {
+        ast_id* id1 = (ast_id*)n1;
+        ast_id* id2 = (ast_id*)n2;
+        return !(strcmp(id1->get_orgname(), id2->get_orgname()));
+    }
+    if (n1->get_nodetype() == AST_FIELD) {
+        return isSameFieldNames((ast_field*)n1, (ast_field*)n2);
+    }
+    return false;
+}
+
 typedef std::list<ast_node*> listOfVariables;
+
+bool findVariableInList(listOfVariables L, ast_node* n) {
+
+    for (listOfVariables::iterator it = L.begin(); it != L.end(); it++) {
+
+        ast_node* n2 = *it;
+        if (sameVariableName(n, n2)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 typedef std::map<ast_sent*, listOfVariables> mapForEachToVariables;
 class gm_cuda_par_regions : public gm_apply {
 
@@ -161,18 +230,18 @@ public:
         set_for_sent(true);
         set_separate_post_apply(true);
         insideForEachLoop = false;
+        set_for_id(true);
     }
 
     bool apply(ast_procdef* proc) {
-        std::list<ast_argdecl*>& inArgs = proc->get_in_args();
+        /*std::list<ast_argdecl*>& inArgs = proc->get_in_args();
         std::list<ast_argdecl*>::iterator i;
         for (i = inArgs.begin(); i != inArgs.end(); i++) {
             ast_typedecl* type = (*i)->get_type();
             ast_idlist* idlist = (*i)->get_idlist();
             for (int ii = 0; ii < idlist->get_length(); ii++) {
                 ast_id* id = idlist->get_item(ii);
-                symbol argSymbol(id, type);
-                symTable.push_back(argSymbol);
+                addToSymTable(id);
             }
         }
         std::list<ast_argdecl*>& outArgs = proc->get_out_args();
@@ -181,10 +250,9 @@ public:
             ast_idlist* idlist = (*i)->get_idlist();
             for (int ii = 0; ii < idlist->get_length(); ii++) {
                 ast_id* id = idlist->get_item(ii);
-                symbol argSymbol(id, type);
-                symTable.push_back(argSymbol);
+                addToSymTable(id);
             }
-        }
+        }*/
         //ast_typedecl* returnType = proc->get_return_type();
         return true;
     }
@@ -192,7 +260,6 @@ public:
     bool apply(ast_sent* s) {
         if (!insideForEachLoop) {
             if (s->get_nodetype() == AST_FOREACH) {
-                // Set the foreach loop to be run in parallel
                 ast_foreach* forEachStmt = (ast_foreach*)s;
                 forEachStmt->set_sequential(false);
                 traverse_up_invalidating(forEachStmt->get_parent());
@@ -201,7 +268,7 @@ public:
             
             }*/
         }// else {
-            switch(s->get_nodetype()) {
+            /*switch(s->get_nodetype()) {
 
                 case AST_VARDECL:   buildSymbolsDecl((ast_vardecl*)s);
                                     break;
@@ -215,7 +282,7 @@ public:
                                     break;
                 case AST_BFS:       buildSymbolsBFS((ast_bfs*)s);
                                     break;
-            }
+            }*/
         //}
     }
 
@@ -225,8 +292,7 @@ public:
 
        for (int i = 0; i < idlist->get_length(); i++) {
            ast_id* id = idlist->get_item(i);
-           symbol argSymbol(id, type);
-           symTable.push_back(argSymbol);
+           addToSymTable(id);
        }
     }
 
@@ -236,6 +302,25 @@ public:
                 return &(*it);
         }
         return NULL;
+    }
+
+    void moveSymbolToGPU(ast_node* node) {
+
+        if (node->get_nodetype() == AST_ID) {
+            ast_id* id = (ast_id*)node;
+            symbol* sym = findSymbol(id->get_orgname());
+            sym->setMemLoc(GPUMemory);
+        }else if (node->get_nodetype() == AST_FIELD) {
+            ast_field* field = (ast_field*)node;
+            symbol* firstField = findSymbol(field->get_first()->get_orgname());
+            for (std::list<symbol*>::iterator it = firstField->children.begin(); it != firstField->children.end(); it++) {
+                
+                if (strcmp((*it)->getName(), field->get_second()->get_orgname()) == 0) {
+                    (*it)->setMemLoc(GPUMemory);
+                    break;
+                }
+            }
+        }
     }
 
     void addToSymTable(ast_id* id) {
@@ -253,14 +338,19 @@ public:
         return findSymbol(id->get_orgname());
     }
 
+    void addFieldToSymTable(ast_field* f) {
+
+        symbol* firstField = addToSymTableAndReturn(f->get_first());
+        firstField->checkAndAdd(f->get_second());
+    }
+
     void addExprToSymTable(ast_expr* e) {
 
         ast_expr* left = e->get_left_op();
         if (left == NULL)
             return;
         if (left->is_field()) {
-            symbol* firstField = addToSymTableAndReturn(left->get_field()->get_first());
-            firstField->checkAndAdd(left->get_field()->get_second());
+            addFieldToSymTable(left->get_field());
         }else if (left->is_id()) {
             addToSymTable(left->get_id());
         }else if (left->is_biop() || left->is_comp() || left->is_terop()) {
@@ -280,71 +370,48 @@ public:
             return;
 
         if (right->is_field()) {
-            symbol* firstField = addToSymTableAndReturn(right->get_field()->get_first());
-            firstField->checkAndAdd(right->get_field()->get_second());
+            addFieldToSymTable(right->get_field());
         }else if (right->is_id()) {
             addToSymTable(right->get_id());
         }else if (right->is_biop() || right->is_comp() || right->is_terop()) {
-            ast_expr* lLeft = right->get_right_op();
-            ast_expr* rLeft = right->get_right_op();
-            addExprToSymTable(lLeft);
-            addExprToSymTable(rLeft);
+            ast_expr* lRight = right->get_right_op();
+            ast_expr* rRight = right->get_right_op();
+            addExprToSymTable(lRight);
+            addExprToSymTable(rRight);
         }else {
-            if (right->get_right_op() != NULL) {
-                ast_expr* lLeft = right->get_right_op();
-                addExprToSymTable(lLeft);
+            if (right->get_left_op() != NULL) {
+                ast_expr* lRight = right->get_left_op();
+                addExprToSymTable(lRight);
             }
         }
-            
-        /*if (right->is_field()) {
-            symbol* firstField = addToSymTableAndReturn(left->get_field()->get_first());
-            firstField->checkAndAdd(left->get_field()->get_second());
-        }*/
     }
 
     bool buildSymbolsAssign(ast_assign* s) {
         if (s->get_assign_type() == GMASSIGN_NORMAL) {
             if (s->is_target_scalar()) {
-                printf("Scalar Targets\n");
-                s->get_lhs_scala()->dump_tree(0);
                 ast_id* id = s->get_lhs_scala();
-                printf("\nEnd Scalar Targets\n");
                 addToSymTable(id);
             }else if (s->is_target_field()) {
-                printf("Field Targets\n");
-                s->get_lhs_field()->dump_tree(0);
-                printf("\nEnd Field Targets\n");
                 ast_field* field = (ast_field *)s->get_lhs_field();
-                symbol* firstFieldSymbol = findSymbol(field->get_first()->get_orgname());
-                if (firstFieldSymbol == NULL) {
-                    symbol tempSym(field->get_first(), field->getSourceTypeInfo());
-                    symTable.push_back(tempSym);
-                    firstFieldSymbol = findSymbol(tempSym.getName());
-                    //firstFieldSymbol = &tempSym;
-                }
-
-                symbol* secondFieldSymbol = firstFieldSymbol->checkAndAdd(field->get_second());
+                addFieldToSymTable(field);
             }
         }else if (s->get_assign_type() == GMASSIGN_REDUCE) {
 
-            printf("Reduced Assignment\n");
-            s->dump_tree(0);
             ast_assign* reduceAssign = (ast_assign*)s;
             if (reduceAssign->is_target_scalar()) {
-                printf("Target Scalar\n");
                 ast_id* target = reduceAssign->get_lhs_scala();
                 addToSymTable(target);
-                ast_expr* rhs = reduceAssign->get_rhs();
-                addExprToSymTable(rhs);
-                ast_id* bound = reduceAssign->get_bound();
             } else if (reduceAssign->is_target_field()) {
-                printf("Target Field\n");
+                ast_field* targetField = reduceAssign->get_lhs_field();
+                addFieldToSymTable(targetField);
             }
+            ast_expr* rhs = reduceAssign->get_rhs();
+            addExprToSymTable(rhs);
+            ast_id* bound = reduceAssign->get_bound();
+            addToSymTable(bound);
             if (reduceAssign->is_defer_assign()) {
                 printf("Defer Assign\n");
             }
-
-            printf("End Reduced Assignment\n");
         }
     }
 
@@ -358,6 +425,19 @@ public:
 
     bool buildSymbolsForEach(ast_foreach* s) {
 
+        ast_id* iterator = s->get_iterator();
+        addToSymTable(iterator);
+
+        if (s->is_source_field()) {
+            ast_field* sourceField = s->get_source_field();
+            addFieldToSymTable(sourceField);
+        } else {
+            ast_id* source = s->get_source();
+            addToSymTable(source);
+        }
+        if (s->get_filter() != NULL) {
+            addExprToSymTable(s->get_filter());
+        }
     }
 
     bool buildSymbolsBFS(ast_bfs* s) {
@@ -368,71 +448,106 @@ public:
 
         printf("SymbolTable:\n");
         for (std::list<symbol>::iterator symIt = symTable.begin(); symIt != symTable.end(); symIt++) {
-            printf("    %s, Type = %d\n", (*symIt).getName(), (*symIt).getType());
+            printf("    %s, Type = %s   ", (*symIt).getName(), gm_get_type_string((*symIt).getType()));
+            if ((*symIt).isSymbolIterator()) {
+                symbol* parent = (*symIt).getParent();
+                while (parent != NULL) {
+                    
+                    printf("-->%s ", parent->getName());
+                    parent = parent->getParent();
+                }
+            }
+            (*symIt).getTypeDecl()->dump_tree(0);
+            /*if ((*symIt).getMemLoc() == GPUMemory)
+                printf(", **GPU Memory**\n");
+            else*/
+                printf("\n");
             for (std::list<symbol*>::iterator childIt = (*symIt).children.begin(); childIt != (*symIt).children.end(); childIt++) {
-                printf("        %s, Type = %d\n", (*childIt)->getName(), (*childIt)->getType());
+                printf("        %s, Type = %s   ", (*childIt)->getName(), gm_get_type_string((*childIt)->getType()));
+                (*childIt)->getTypeDecl()->dump_tree(0);
+                /*if ((*childIt)->getMemLoc() == GPUMemory)
+                    printf(", **GPU Memory**\n");
+                else*/
+                    printf("\n");
             }
         }
         printf("End Symbol Table\n");
     }
 
+    void addIteratorForSymbol(ast_id* iterator, ast_id* source, int iterType) {
+        symbol* iterSymbol = findSymbol(iterator->get_orgname());
+        assert(iterSymbol != NULL);
+        symbol* sourceSymbol = findSymbol(source->get_orgname());
+        assert(sourceSymbol != NULL);
+
+        iterSymbol->setParent(sourceSymbol);
+        iterSymbol->setSymbolIteratorType(iterType);
+        iterSymbol->setSymbolIterator(true);
+    }
+
     bool apply(ast_id *s) {
         ast_node* parent = s->get_parent();
+        if (insideForEachLoop == true) {
+            if (parent->get_nodetype() == AST_FIELD) {
+                if (((ast_field*)parent)->get_first() == s) {
+                } else if (((ast_field*)parent)->get_second() == s) {
+                    if (!findVariableInList(currentList, parent))
+                        currentList.push_back(s->get_parent());
+                    moveSymbolToGPU(parent);
+                }
+            } else if (parent->get_nodetype() == AST_MAPACCESS) {
+                if (!findVariableInList(currentList, parent))
+                    currentList.push_back(s->get_parent());
+            } else {
+                if (!findVariableInList(currentList, s))
+                    currentList.push_back(s);
+                moveSymbolToGPU(s);
+            }
+        }
+        if (parent == NULL)
+            return true;
         if (parent->get_nodetype() == AST_FIELD) {
-            //printf("Parent is AST_FIELD\n");
             if (((ast_field*)parent)->get_first() == s) {
-                //printf("    Identifier is %s\n", s->get_orgname());
             } else if (((ast_field*)parent)->get_second() == s) {
-                //printf("    Field is %s\n", s->get_orgname());
-                currentList.push_back(s->get_parent());
+                addFieldToSymTable((ast_field*)parent);
             }
         } else if (parent->get_nodetype() == AST_MAPACCESS) {
-            //printf("Parent is AST_MAPACCESS\n");
-            currentList.push_back(s->get_parent());
         } else {
-            currentList.push_back(s);
+            addToSymTable(s);
         }
-        //printf("AST_ID Node:: Variables for each = %s\n", s->get_orgname());
     }
 
     bool apply2(ast_sent* s) {
-        //printf("Ongoing post transfer changes\n");
-        if (insideForEachLoop) {
-            if (s->get_nodetype() == AST_ID) {
-                ast_id *identifier = (ast_id*) s;
-                printf("Variable inside foreach = %s\n", identifier->get_orgname());
-            }
-        } else if (s->get_nodetype() == AST_FOREACH) {
+        if (!insideForEachLoop && s->get_nodetype() == AST_FOREACH) {
             ast_foreach* forEachStmt = (ast_foreach*)s;
             if (forEachStmt->is_parallel()) {
                 insideForEachLoop = true;
                 set_for_sent(false);
                 set_separate_post_apply(false);
-                set_for_id(true);
                 
                 listOfVariables *variablesList = new listOfVariables();
-                //currentList = variablesList;
-                //currentList.empty();
                 
-                if (forEachStmt->get_iterator() != NULL)
-                    //forEachStmt->get_iterator()->traverse_pre(this);
-                    currentList.push_back(forEachStmt->get_iterator());
-                if (forEachStmt->get_source() != NULL)
-                    //forEachStmt->get_source()->traverse_pre(this);
-                    currentList.push_back(forEachStmt->get_source());
-                if (forEachStmt->get_source2() != NULL)
-                    //forEachStmt->get_source2()->traverse_pre(this);
-                    currentList.push_back(forEachStmt->get_source2());
-                if (forEachStmt->is_source_field())
-                    forEachStmt->get_source_field()->traverse_pre(this);
-                if (forEachStmt->get_filter() != NULL)
+                if (forEachStmt->get_iterator() != NULL) {
+                    moveSymbolToGPU(forEachStmt->get_iterator());
+                    if (!findVariableInList(currentList, forEachStmt->get_iterator()))
+                        currentList.push_back(forEachStmt->get_iterator());
+                }
+                if (forEachStmt->get_source() != NULL) {
+                    moveSymbolToGPU(forEachStmt->get_source());
+                    if (!findVariableInList(currentList, forEachStmt->get_source()))
+                        currentList.push_back(forEachStmt->get_source());
+                }
+                if (forEachStmt->get_source2() != NULL) {
+                    moveSymbolToGPU(forEachStmt->get_source2());
+                    if (!findVariableInList(currentList, forEachStmt->get_source2()))
+                        currentList.push_back(forEachStmt->get_source2());
+                }
+                if (forEachStmt->is_source_field()) {
+                    moveSymbolToGPU(forEachStmt->get_source_field());
+                }
+                if (forEachStmt->get_filter() != NULL) {
                     forEachStmt->get_filter()->traverse_pre(this);
-                /*forEachStmt->get_iterator()->traverse_pre(this);
-                forEachStmt->get_source()->traverse_pre(this);
-                if (forEachStmt->get_source2() != NULL)
-                    forEachStmt->get_source2()->traverse_pre(this);
-                forEachStmt->get_source_field()->traverse_pre(this);
-                forEachStmt->get_filter()->traverse_pre(this);*/
+                }
 
                 forEachStmt->get_body()->traverse_pre(this);
 
@@ -446,10 +561,14 @@ public:
                 
                 set_for_sent(true);
                 set_separate_post_apply(true);
-                set_for_id(false);
-                printf("Post Tranverse foreach loop. It = %s\n", forEachStmt->get_iterator()->get_orgname());
                 insideForEachLoop = false;
             }
+        }
+        if (s->get_nodetype() == AST_FOREACH) {
+            ast_foreach* forEachStmt = (ast_foreach*)s;
+            ast_id* iterator = forEachStmt->get_iterator();
+            ast_id* source = forEachStmt->get_source();
+            addIteratorForSymbol(iterator, source, forEachStmt->get_iter_type());
         }
     }
 
@@ -471,6 +590,31 @@ public:
                 it++) {
 
             listOfVariables L = (*it).second;
+            /*for (listOfVariables::iterator iit = L.begin(); iit != L.end(); iit++) {
+                ast_node* n1 = *iit;
+                listOfVariables::iterator iit2 = iit;
+                iit2++;
+                for (; iit2 != L.end(); iit2++) {
+                    ast_node* n2 = *iit2;
+                    if (n1->get_nodetype() == AST_ID &&
+                        n2->get_nodetype() == AST_ID) {
+                        ast_id* id1 = (ast_id*)n1;
+                        ast_id* id2 = (ast_id*)n2;
+                        if (!(strcmp(id1->get_orgname(), id2->get_orgname()))) {
+                            iit2 = L.erase(iit2);
+                        }
+                    } else if (n1->get_nodetype() == AST_FIELD &&
+                               n2->get_nodetype() == AST_FIELD) {
+                    
+                        ast_field* f1 = (ast_field*)n1;
+                        ast_field* f2 = (ast_field*)n2;
+                        if (isSameFieldNames(f1, f2)) {
+                            iit2 = L.erase(iit2);
+                        }
+                    }
+                }
+            }*/
+            printf("Next ForEachLoop:\n");
             for (listOfVariables::iterator iit = L.begin(); iit != L.end(); 
                     iit++) {
                 ast_node *node = *iit;
@@ -480,13 +624,11 @@ public:
                 } else if (node->get_nodetype() == AST_MAPACCESS) {
                     ast_mapaccess* mapNode = (ast_mapaccess*)node;
                     printf("    AST_MAPACCESS:: %s[]\n", mapNode->get_map_id()->get_orgname());
-                    mapNode->get_key_expr()->dump_tree(0);
                 } else if (node->get_nodetype() == AST_ID){
                     ast_id* idNode = (ast_id*) node;
                     printf("    AST_ID:: %s\n", idNode->get_orgname());
                 }
             }
-            printf("Next ForEachLoop:\n");
         }
     }
 
@@ -494,6 +636,7 @@ private:
     
 };
 
+/* Delete This
 typedef std::pair<ast_node*, ast_node*> depEdge;
 class gm_cuda_dependency_graph : public gm_apply {
 
@@ -532,27 +675,25 @@ public:
             }
         }
     }
-};
+};*/
+
+    gm_cuda_par_regions transfer;
 
 void gm_cuda_gen_identify_par_regions::process(ast_procdef* proc) {
     
-    gm_cuda_par_regions transfer;
-    gm_cuda_dependency_graph dep_graph;
-    //gm_defined_symbol_traverse symAnalysis;
+    //gm_cuda_dependency_graph dep_graph;
     
-    //transfer.apply(proc);
     transfer.set_for_proc(true);
     proc->traverse_pre(&transfer);
-    transfer.printSymbols();
     transfer.set_for_proc(false);
     printf("\n\n----------Ended Pre Traversal-----------\n\n");
     proc->traverse_post(&transfer);
     proc->dump_tree(0);
+    transfer.printSymbols();
     printf("Variables list\n---------------\n");
     transfer.printVariablesInsideForEachLoop(); 
 
     //proc->traverse_pre(&dep_graph);
-    //proc->traverse_pre(&symAnalysis);
 }
 
 void gm_cuda_gen_proc::process(ast_procdef* proc) {
@@ -764,6 +905,25 @@ void gm_cuda_gen::generate_sent_block_exit(ast_sentblock* b) {
 
 void gm_cuda_gen::generate_proc(ast_procdef* proc) {
 
+    printf("Inside Code Generation of CUDA\n");
+
+    // Parallel Regions Analysis
+    gm_cuda_par_regions PRA = transfer;
+    generate_kernel_function(proc);
+}
+
+// Generate the Kernel call definition
+void gm_cuda_gen::generate_kernel_function(ast_procdef* proc) {
+
+    gm_code_writer& Out = Body;
+    std::string str("__global__ void ");
+
+    str = str + proc->get_procname()->get_genname();
+    Out.push(str.c_str());
+
+    Out.push("(");
+    
+    Out.NL();
 }
 
 /*

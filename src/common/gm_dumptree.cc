@@ -53,7 +53,7 @@ void ast_mapaccess::dump_tree(int indLevel) {
 }
 
 void ast_typedecl::dump_tree(int ind_level) {
-    assert(parent!=NULL);
+    //assert(parent!=NULL);
     IND(ind_level);
     printf("<TYPE ");
     printf(" type:%s", gm_get_type_string(type_id));
