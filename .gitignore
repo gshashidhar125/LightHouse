@@ -61,6 +61,7 @@ apps/output_java/src/main/_64bit
 
 apps/src/*.cc
 apps/src/*.cpp
+apps/src/*.cu
 apps/src/*.h
 
 etc/update_setup

@@ -8,6 +8,8 @@
 #include "gm_builtin.h"
 #include "gm_argopts.h"
 
+bool doPrint = true;
+
 void gm_cuda_gen::setTargetDir(const char* d) {
     assert(d != NULL);
     if (dname != NULL)
@@ -22,6 +24,13 @@ void gm_cuda_gen::setFileName(const char* f) {
         delete[] fname;
     fname = new char[strlen(f) + 1];
     strcpy(fname, f);
+}
+
+void gm_cuda_gen::printToFile(const char* s) {
+    if (insideCudaKernel)
+        cudaBody.push(s);
+    else
+        Body.push(s);
 }
 /*
 bool gm_cuda_gen::do_local_optimize() {
@@ -95,7 +104,9 @@ void gm_cuda_gen::do_generate_begin() {
     char temp[1024];
     sprintf(temp, "%s.h", fname);
     add_include(temp, Body, false);
+    add_include(temp, cudaBody, false);
     Body.NL();
+    cudaBody.NL();
 }
 
 void gm_cuda_gen::do_generate_end() {
@@ -129,16 +140,35 @@ public:
         parent = NULL;
         memLoc = CPUMemory;
         isIterator = false;
+        isParallelIterator = false;
     }
 
-    std::string name;
+    std::string codeGenName;
+    std::string startIndexStr, endIndexStr;
     ast_node* node;
     ast_typedecl* type;
     symbol* parent;
     std::list<symbol*> children;
     memory memLoc;
-    bool isIterator;
+    bool isIterator, isParallelIterator;
     int iterType;
+
+    std::string getCodeGenName() {
+        return codeGenName;
+    }
+    void setCodeGenName(std::string n) {
+        codeGenName = n;
+    }
+
+    std::string getStartIndexStr() {
+        assert(isIterator && !isParallelIterator);
+        return startIndexStr;
+    }
+
+    std::string getEndIndexStr() {
+        assert(isIterator && !isParallelIterator);
+        return endIndexStr;
+    }
 
     symbol* getParent() {   return parent;  }
     void setParent(symbol* p) { parent = p; }
@@ -159,8 +189,22 @@ public:
     bool isSymbolIterator() {   return isIterator;  }
     void setSymbolIterator(bool s) {isIterator = s; }
 
+    bool isSymbolParallelIterator() {   return isParallelIterator;  }
+    void setSymbolParallelIterator(bool s) {isParallelIterator = s; }
+
     bool getSymbolIterType() {   return iterType;   }
     void setSymbolIteratorType(int s) {iterType = s; }
+
+    std::string getIteratorTypeString() {
+        assert(isIterator);
+        std::string typeString;
+        if (type->is_node_iterator() || type->is_edge_iterator()) {
+            typeString = "int";
+        } else if (gm_is_collection_iterator_type(iterType)) {
+            typeString = "collection";
+        }
+        return typeString;
+    }
 
     symbol* checkAndAdd(ast_id* secondField) {
 
@@ -171,7 +215,187 @@ public:
         }
         symbol* newSymbol = new symbol(secondField, secondField->getTypeInfo());
         children.push_back(newSymbol);
+        //newSymbol->setParent(this);
         return newSymbol;
+    }
+
+    std::string getIndexParallel() {
+        std::string indexStr;
+        symbol* parentSym = getParent();
+
+        if (parentSym->type->is_graph()) {
+            if (gm_is_all_graph_node_iteration(iterType)) {
+                indexStr = "G1[tId]";
+            } else if (gm_is_all_graph_edge_iteration(iterType)) {
+                indexStr = "G2[tId]";
+            }
+        } else if (parentSym->type->is_node()) {
+            std::string temp = parentSym->getName();
+            switch(iterType) {
+                case GMITER_NODE_NBRS:
+                        indexStr = "G2[G1[" + temp + "] + tId]";
+                        break;
+                case GMITER_NODE_IN_NBRS:
+                        indexStr = "IN-Nbrs G2[G1[" + temp + "] + tId]";
+                        break;
+                case GMITER_NODE_UP_NBRS:
+                        indexStr = "UP-Nbrs G2[G1[" + temp + "] + tId]";
+                        break;
+                case GMITER_NODE_DOWN_NBRS:
+                        indexStr = "DOWN-Nbrs G2[G1[" + temp + "] + tId]";
+                        break;
+            }
+        } else if (parentSym->type->is_edge()) {
+            std::string temp = parentSym->getName();
+            switch(iterType) {
+                case GMITER_EDGE_NBRS:
+                        indexStr = "Edge NBRS";
+                        break;
+                case GMITER_EDGE_IN_NBRS:
+                        indexStr = "Edge IN-Nbrs";
+                        break;
+                case GMITER_EDGE_UP_NBRS:
+                        indexStr = "Edge UP-Nbrs";
+                        break;
+                case GMITER_EDGE_DOWN_NBRS:
+                        indexStr = "Edge DOWN-Nbrs";
+                        break;
+            }
+        } else if (parentSym->type->is_node_iterator()) {
+
+            std::string temp = parentSym->getName();
+            switch(iterType) {
+                case GMITER_NODE_NBRS:
+                        indexStr = "G2[G1[" + temp + "] + tId]";
+                        break;
+                case GMITER_NODE_IN_NBRS:
+                        indexStr = "IN-Nbrs G2[G1[" + temp + "] + tId]";
+                        break;
+                case GMITER_NODE_UP_NBRS:
+                        indexStr = "UP-Nbrs G2[G1[" + temp + "] + tId]";
+                        break;
+                case GMITER_NODE_DOWN_NBRS:
+                        indexStr = "DOWN-Nbrs G2[G1[" + temp + "] + tId]";
+                        break;
+            }
+        } else if (parentSym->type->is_edge_iterator()) {
+
+            std::string temp = parentSym->getName();
+            switch(iterType) {
+                case GMITER_EDGE_NBRS:
+                        indexStr = "Edge NBRS";
+                        break;
+                case GMITER_EDGE_IN_NBRS:
+                        indexStr = "Edge IN-Nbrs";
+                        break;
+                case GMITER_EDGE_UP_NBRS:
+                        indexStr = "Edge UP-Nbrs";
+                        break;
+                case GMITER_EDGE_DOWN_NBRS:
+                        indexStr = "Edge DOWN-Nbrs";
+                        break;
+            }
+        }
+        printf("########GetINDEX %s - type %d \n", indexStr.c_str(), parentSym->type->get_typeid());
+        //std::cout << "########GetINDEX " << indexStr << "\n";
+        setCodeGenName(indexStr);
+        return indexStr;
+    }
+
+    std::string getIndexSequential() {
+        //std::string startIndexStr, endIndexStr;
+        symbol* parentSym = getParent();
+
+        if (parentSym->type->is_graph()) {
+            if (gm_is_all_graph_node_iteration(iterType)) {
+                startIndexStr = "0";
+                endIndexStr = "NumNodes";
+            } else if (gm_is_all_graph_edge_iteration(iterType)) {
+                startIndexStr = "0";
+                endIndexStr = "NumEdges";
+            }
+        } else if (parentSym->type->is_node()) {
+            std::string temp = parentSym->getName();
+            switch(iterType) {
+                case GMITER_NODE_NBRS:
+                        startIndexStr = "G2[G1[" + temp + "]]";
+                        endIndexStr = "G2[G1[" + temp + " + 1]]";
+                        break;
+                case GMITER_NODE_IN_NBRS:
+                        startIndexStr = "IN-Nbrs G2[G1[" + temp + "]]";
+                        endIndexStr = "IN-Nbrs G2[G1[" + temp + " + 1]]";
+                        break;
+                case GMITER_NODE_UP_NBRS:
+                        startIndexStr = "UP-Nbrs G2[G1[" + temp + "]]";
+                        endIndexStr = "UP-Nbrs G2[G1[" + temp + " + 1]]";
+                        break;
+                case GMITER_NODE_DOWN_NBRS:
+                        startIndexStr = "DOWN-Nbrs G2[G1[" + temp + "]]";
+                        endIndexStr = "DOWN-Nbrs G2[G1[" + temp + " + 1]]";
+                        break;
+            }
+        } else if (parentSym->type->is_edge()) {
+            std::string temp = parentSym->getName();
+            switch(iterType) {
+                case GMITER_EDGE_NBRS:
+                        startIndexStr = "Edge NBRS";
+                        endIndexStr = "Edge NBRS";
+                        break;
+                case GMITER_EDGE_IN_NBRS:
+                        startIndexStr = "Edge IN-Nbrs";
+                        endIndexStr = "Edge IN-Nbrs";
+                        break;
+                case GMITER_EDGE_UP_NBRS:
+                        startIndexStr = "Edge UP-Nbrs";
+                        endIndexStr = "Edge UP-Nbrs";
+                        break;
+                case GMITER_EDGE_DOWN_NBRS:
+                        startIndexStr = "Edge DOWN-Nbrs";
+                        endIndexStr = "Edge DOWN-Nbrs";
+                        break;
+            }
+        } else if (parentSym->type->is_node_iterator()) {
+
+            std::string temp = parentSym->getName();
+            switch(iterType) {
+                case GMITER_NODE_NBRS:
+                        startIndexStr = "G2[G1[" + temp + "]]";
+                        endIndexStr = "G2[G1[" + temp + " + 1]]";
+                        break;
+                case GMITER_NODE_IN_NBRS:
+                        startIndexStr = "IN-Nbrs G2[G1[" + temp + "]]";
+                        endIndexStr = "IN-Nbrs G2[G1[" + temp + " + 1]]";
+                        break;
+                case GMITER_NODE_UP_NBRS:
+                        startIndexStr = "UP-Nbrs G2[G1[" + temp + "]]";
+                        endIndexStr = "UP-Nbrs G2[G1[" + temp + " + 1]]";
+                        break;
+                case GMITER_NODE_DOWN_NBRS:
+                        startIndexStr = "DOWN-Nbrs G2[G1[" + temp + "]]";
+                        endIndexStr = "DOWN-Nbrs G2[G1[" + temp + " + 1]]";
+                        break;
+            }
+        } else if (parentSym->type->is_edge_iterator()) {
+
+            std::string temp = parentSym->getName();
+            switch(iterType) {
+                case GMITER_EDGE_NBRS:
+                        startIndexStr = "Edge NBRS";
+                        break;
+                case GMITER_EDGE_IN_NBRS:
+                        startIndexStr = "Edge IN-Nbrs";
+                        break;
+                case GMITER_EDGE_UP_NBRS:
+                        startIndexStr = "Edge UP-Nbrs";
+                        break;
+                case GMITER_EDGE_DOWN_NBRS:
+                        startIndexStr = "Edge DOWN-Nbrs";
+                        break;
+            }
+        }
+        printf("########GetINDEX from %s - to %s. type %d \n", startIndexStr.c_str(), endIndexStr.c_str(), parentSym->type->get_typeid());
+        //std::cout << "########GetINDEX " << indexStr << "\n";
+        return startIndexStr;
     }
 };
 
@@ -221,7 +445,7 @@ typedef std::map<ast_sent*, listOfVariables> mapForEachToVariables;
 class gm_cuda_par_regions : public gm_apply {
 
 public:
-    bool insideForEachLoop;
+    bool postTraversal, insideForEachLoop;
     mapForEachToVariables forEachLoopVariables;
     listOfVariables currentList;
     std::list<symbol> symTable;
@@ -229,6 +453,7 @@ public:
     gm_cuda_par_regions() {
         set_for_sent(true);
         set_separate_post_apply(true);
+        postTraversal = false;
         insideForEachLoop = false;
         set_for_id(true);
     }
@@ -258,11 +483,16 @@ public:
     }
 
     bool apply(ast_sent* s) {
-        if (!insideForEachLoop) {
+        if (!postTraversal) {
             if (s->get_nodetype() == AST_FOREACH) {
                 ast_foreach* forEachStmt = (ast_foreach*)s;
-                forEachStmt->set_sequential(false);
-                traverse_up_invalidating(forEachStmt->get_parent());
+                if (insideForEachLoop == false) {
+                    insideForEachLoop = true;
+                    forEachStmt->set_sequential(false);
+                    //traverse_up_invalidating(forEachStmt->get_parent());
+                } else {
+                    forEachStmt->set_sequential(true);
+                }
             } // TODO: Can while loop be parallelized on GPU ?
             /*else if(s->get_nodetype() == AST_WHILE) {
             
@@ -457,6 +687,7 @@ public:
                     parent = parent->getParent();
                 }
             }
+            if(doPrint)
             (*symIt).getTypeDecl()->dump_tree(0);
             /*if ((*symIt).getMemLoc() == GPUMemory)
                 printf(", **GPU Memory**\n");
@@ -464,6 +695,7 @@ public:
                 printf("\n");
             for (std::list<symbol*>::iterator childIt = (*symIt).children.begin(); childIt != (*symIt).children.end(); childIt++) {
                 printf("        %s, Type = %s   ", (*childIt)->getName(), gm_get_type_string((*childIt)->getType()));
+                if(doPrint)
                 (*childIt)->getTypeDecl()->dump_tree(0);
                 /*if ((*childIt)->getMemLoc() == GPUMemory)
                     printf(", **GPU Memory**\n");
@@ -487,7 +719,7 @@ public:
 
     bool apply(ast_id *s) {
         ast_node* parent = s->get_parent();
-        if (insideForEachLoop == true) {
+        if (postTraversal == true) {
             if (parent->get_nodetype() == AST_FIELD) {
                 if (((ast_field*)parent)->get_first() == s) {
                 } else if (((ast_field*)parent)->get_second() == s) {
@@ -518,10 +750,10 @@ public:
     }
 
     bool apply2(ast_sent* s) {
-        if (!insideForEachLoop && s->get_nodetype() == AST_FOREACH) {
+        if (!postTraversal && s->get_nodetype() == AST_FOREACH) {
             ast_foreach* forEachStmt = (ast_foreach*)s;
             if (forEachStmt->is_parallel()) {
-                insideForEachLoop = true;
+                postTraversal = true;
                 set_for_sent(false);
                 set_separate_post_apply(false);
                 
@@ -561,6 +793,7 @@ public:
                 
                 set_for_sent(true);
                 set_separate_post_apply(true);
+                postTraversal = false;
                 insideForEachLoop = false;
             }
         }
@@ -683,12 +916,20 @@ void gm_cuda_gen_identify_par_regions::process(ast_procdef* proc) {
     
     //gm_cuda_dependency_graph dep_graph;
     
-    transfer.set_for_proc(true);
+    if (!OPTIONS.get_arg_bool(GMARGFLAG_DUMP_TREE)) {
+        doPrint = false;
+    }
+    printf("Do Print = %d\n", doPrint);
+    /*transfer.set_for_proc(true);
     proc->traverse_pre(&transfer);
     transfer.set_for_proc(false);
     printf("\n\n----------Ended Pre Traversal-----------\n\n");
-    proc->traverse_post(&transfer);
-    proc->dump_tree(0);
+    proc->traverse_post(&transfer);*/
+    proc->traverse_both(&transfer);
+
+    if(doPrint)
+        proc->dump_tree(0);
+
     transfer.printSymbols();
     printf("Variables list\n---------------\n");
     transfer.printVariablesInsideForEachLoop(); 
@@ -721,6 +962,14 @@ bool gm_cuda_gen::open_output_files() {
     }
     Body.set_output_file(f_body);
     //get_lib()->set_code_writer(&Body);
+
+    sprintf(temp, "%s/%s.cu", dname, fname);
+    f_cudaBody = fopen(temp, "w");
+    if (f_cudaBody == NULL) {
+        gm_backend_error(GM_ERROR_FILEWRITE_ERROR, temp);
+        return false;
+    }
+    cudaBody.set_output_file(f_cudaBody);
     return true;
 }
 
@@ -745,42 +994,237 @@ void gm_cuda_gen::close_output_files(bool remove_files) {
         }
         f_body = NULL;
     }
+    if (f_cudaBody != NULL) {
+        cudaBody.flush();
+        fclose(f_cudaBody);
+        if(remove_files) {
+            sprintf(temp, "rm %s/%s.cu", dname, fname);
+            system(temp);
+        }
+        f_cudaBody = NULL;
+    }
 }
 
 void gm_cuda_gen::generate_lhs_id(ast_id* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
+    Body.push(i->get_orgname());
 }
 
 void gm_cuda_gen::generate_lhs_field(ast_field* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
+    Body.push(i->get_second()->get_orgname());
+    symbol* iterator = transfer.findSymbol(i->get_first()->get_orgname());
+    std::string str = "[";
+    str = str + iterator->getName() + "]";
+    Body.push(str.c_str());
 }
 
 void gm_cuda_gen::generate_rhs_id(ast_id* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
+    Body.push(i->get_orgname());
 }
 
 void gm_cuda_gen::generate_rhs_field(ast_field* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
+    Body.push(i->get_second()->get_orgname());
+    symbol* iterator = transfer.findSymbol(i->get_first()->get_orgname());
+    std::string str = "[";
+    str = str + iterator->getName() + "]";
+    Body.push(str.c_str());
 }
 /*
 void gm_cuda_gen::generate_expr_foreign(ast_expr* e) {
 
 }*/
 
+// TODO: Today
+// builtin functions like G.NumEdges()
 void gm_cuda_gen::generate_expr_builtin(ast_expr* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
+    ast_expr_builtin* b = (ast_expr_builtin*)i;
+    gm_builtin_def* def = b->get_builtin_def();
+    std::string str;
+    switch (def->get_method_id()) {
+        case GM_BLTIN_GRAPH_NUM_NODES: 
+                Body.push("G.NumNodes");
+                break;  
+        case GM_BLTIN_GRAPH_NUM_EDGES: 
+                Body.push("G.NumEdges");
+                break;  
+        case GM_BLTIN_GRAPH_RAND_NODE: 
+                Body.push("BUILTIN3");
+                break;  
+
+        case GM_BLTIN_NODE_DEGREE: 
+                str = "G1[" + std::string(b->get_driver()->get_orgname()) + " + 1] - G1[" + b->get_driver()->get_orgname() + "]";
+                Body.push(str.c_str());
+                break;      
+        case GM_BLTIN_NODE_IN_DEGREE: 
+                str = "G1[" + std::string(b->get_driver()->get_orgname()) + " + 1] - G1[" + b->get_driver()->get_orgname() + "]";
+                Body.push(str.c_str());
+                break;   
+        case GM_BLTIN_NODE_TO_EDGE: 
+                Body.push("BUILTIN6");
+                break;     
+        case GM_BLTIN_NODE_IS_NBR_FROM: 
+                Body.push("BUILTIN7");
+                break; 
+        case GM_BLTIN_NODE_HAS_EDGE_TO: 
+                Body.push("BUILTIN8");
+                break; 
+        case GM_BLTIN_NODE_RAND_NBR: 
+                Body.push("BUILTIN9");
+                break;    
+
+        case GM_BLTIN_EDGE_FROM: 
+                Body.push("BUILTIN10");
+                break;        
+        case GM_BLTIN_EDGE_TO: 
+                Body.push("BUILTIN11");
+                break;          
+
+        case GM_BLTIN_TOP_DRAND: 
+                Body.push("BUILTIN12");
+                break;        
+        case GM_BLTIN_TOP_IRAND: 
+                Body.push("BUILTIN13");
+                break;        
+        case GM_BLTIN_TOP_LOG: 
+                Body.push("BUILTIN14");
+                break;          
+        case GM_BLTIN_TOP_EXP: 
+                Body.push("BUILTIN15");
+                break;          
+        case GM_BLTIN_TOP_POW: 
+                Body.push("BUILTIN16");
+                break;          
+
+        case GM_BLTIN_SET_ADD: 
+                Body.push("BUILTIN17");
+                break;
+        case GM_BLTIN_SET_REMOVE: 
+                Body.push("BUILTIN18");
+                break;
+        case GM_BLTIN_SET_HAS: 
+                Body.push("BUILTIN19");
+                break;
+        case GM_BLTIN_SET_ADD_BACK: 
+                Body.push("BUILTIN20");
+                break;
+        case GM_BLTIN_SET_REMOVE_BACK: 
+                Body.push("BUILTIN21");
+                break;
+        case GM_BLTIN_SET_PEEK: 
+                Body.push("BUILTIN22");
+                break;
+        case GM_BLTIN_SET_PEEK_BACK: 
+                Body.push("BUILTIN23");
+                break;
+        case GM_BLTIN_SET_UNION: 
+                Body.push("BUILTIN24");
+                break;
+        case GM_BLTIN_SET_INTERSECT: 
+                Body.push("BUILTIN25");
+                break;
+        case GM_BLTIN_SET_COMPLEMENT: 
+                Body.push("BUILTIN26");
+                break;
+        case GM_BLTIN_SET_SUBSET: 
+                Body.push("BUILTIN27");
+                break;
+        case GM_BLTIN_SET_SIZE: 
+                Body.push("BUILTIN28");
+                break;
+        case GM_BLTIN_SET_CLEAR: 
+                Body.push("BUILTIN29");
+                break;
+
+        case GM_BLTIN_SEQ_POP_FRONT: 
+                Body.push("BUILTIN30");
+                break;
+
+        case GM_BLTIN_MAP_SIZE: 
+                Body.push("BUILTIN31");
+                break;         
+        case GM_BLTIN_MAP_HAS_MAX_VALUE: 
+                Body.push("BUILTIN32");
+                break;
+        case GM_BLTIN_MAP_HAS_MIN_VALUE: 
+                Body.push("BUILTIN33");
+                break;
+        case GM_BLTIN_MAP_HAS_KEY: 
+                Body.push("BUILTIN34");
+                break;      
+        case GM_BLTIN_MAP_GET_MAX_KEY: 
+                Body.push("BUILTIN35");
+                break;  
+        case GM_BLTIN_MAP_GET_MIN_KEY: 
+                Body.push("BUILTIN36");
+                break;  
+        case GM_BLTIN_MAP_GET_MAX_VALUE: 
+                Body.push("BUILTIN37");
+                break;
+        case GM_BLTIN_MAP_GET_MIN_VALUE: 
+                Body.push("BUILTIN38");
+                break;
+        case GM_BLTIN_MAP_CLEAR: 
+                Body.push("BUILTIN39");
+                break;        
+        case GM_BLTIN_MAP_REMOVE: 
+                Body.push("BUILTIN40");
+                break;       
+
+        case GM_BLTIN_MAP_REMOVE_MIN: 
+                Body.push("BUILTIN41");
+                break;   
+        case GM_BLTIN_MAP_REMOVE_MAX: 
+                Body.push("BUILTIN42");
+                break;   
+    }
 }
 
 void gm_cuda_gen::generate_expr_minmax(ast_expr* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
 }
 
 void gm_cuda_gen::generate_expr_abs(ast_expr* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
 }
 
 void gm_cuda_gen::generate_expr_nil(ast_expr* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
 }
 
 /*void gm_cuda_gen::generate_expr_type_conversion(ast_expr* e) {
@@ -791,10 +1235,31 @@ void gm_cuda_gen::generate_expr_nil(ast_expr* i) {
 
 }*/
 
-const char* gm_cuda_gen::get_type_string(int prim_t) {
+const char* gm_cuda_gen::get_type_string(int type_id) {
     
-    const char* p;
-    return p;
+    if (gm_is_prim_type(type_id)) {
+        switch (type_id) {
+            case GMTYPE_BYTE:
+                return "int8_t";
+            case GMTYPE_SHORT:
+                return "int16_t";
+            case GMTYPE_INT:
+                return "int32_t";
+            case GMTYPE_LONG:
+                return "int64_t";
+            case GMTYPE_FLOAT:
+                return "float";
+            case GMTYPE_DOUBLE:
+                return "double";
+            case GMTYPE_BOOL:
+                return "bool";
+            default:
+                assert(false);
+                return "??";
+        }
+    } else {
+        return "UnknownType";//get_lib()->get_type_string(type_id);
+    }
 }
 /*
 void gm_cuda_gen::generate_expr_list(std::list<ast_expr*>& L) {
@@ -828,10 +1293,18 @@ bool gm_cuda_gen::check_need_para(int optype, int up_optype, bool is_right) {
 
 void gm_cuda_gen::generate_sent_nop(ast_nop* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
 }
 
 void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
 }
 
 /*void gm_cuda_gen::generate_sent_defer_assign(ast_assign* i) {
@@ -840,10 +1313,123 @@ void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
 
 void gm_cuda_gen::generate_sent_vardecl(ast_vardecl* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
 }
 
 void gm_cuda_gen::generate_sent_foreach(ast_foreach* i) {
 
+    printf("Entered Line number %d\n", __LINE__);
+    if(doPrint)
+    i->dump_tree(2);
+    printf("\nEnded..\n\n");
+
+    Body.push("}\n");
+
+    gm_code_writer temp;
+    if (i->is_parallel()) {
+        insideCudaKernel = true;
+        generate_newKernelFunction(i);
+        temp = Body;
+        Body = cudaBody;
+    }
+
+    generate_CudaAssignForIterator(i->get_iterator(), i->is_parallel());
+
+    if (i->get_filter() != NULL) {
+
+    }
+
+    generate_sent(i->get_body());
+
+    if (i->is_parallel()) {
+        Body.push("}\n");
+        insideCudaKernel = false;
+        Body = temp;
+    }
+}
+
+void gm_cuda_gen::generate_CudaAssignForIterator(ast_id* iter, bool isParallel) {
+
+    symbol* iterSym = transfer.findSymbol(iter->get_orgname());
+    if (isParallel) {
+        iterSym->setSymbolParallelIterator(true);
+        iterSym->getIndexParallel();
+        std::string str = iterSym->getIteratorTypeString() + " " + iterSym->getName();
+        str = str + " = ";
+        str = str + iterSym->getCodeGenName() + ";\n";
+        Body.push(str.c_str());
+    } else {
+        iterSym->setSymbolParallelIterator(false);
+        iterSym->getIndexSequential();
+        std::string str = "for (" + iterSym->getIteratorTypeString() + " "+ iterSym->getName() + " = " + iterSym->startIndexStr + "; " + iterSym->getName() + " != " + iterSym->endIndexStr + "; " + iterSym->getName() + "++) ";
+
+        Body.push(str.c_str());
+    }
+}
+
+void gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
+
+    static int forLoopId = 0;
+    char temp[1024];
+    sprintf(temp, "%d", forLoopId);
+    std::string str = "__global__ void forEachKernel" + std::string(temp) + std::string(" (");
+    forLoopId++;
+    
+    Body.indent = 0;
+    Body.push(str.c_str());
+
+    std::list<ast_argdecl*>& inArgs = currentProc->get_in_args();
+    std::list<ast_argdecl*>::iterator i;
+    bool isFirst = true;
+    for (i = inArgs.begin(); i != inArgs.end(); i++) {
+        ast_typedecl* type = (*i)->get_type();
+        ast_idlist* idlist = (*i)->get_idlist();
+        for (int ii = 0; ii < idlist->get_length(); ii++) {
+            if (isFirst == false)
+                Body.push(", ");
+            isFirst = false;
+
+            ast_id* id = idlist->get_item(ii);
+            if (type->is_primitive()) {
+
+                sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+            }else if (type->is_graph()) {
+                sprintf(temp, "Graph %s", id->get_orgname());
+            }else if (type->is_property()) {
+                ast_typedecl* targetType = type->get_target_type();
+                sprintf(temp, "%s * %s", gm_get_type_string(targetType->get_typeid()), id->get_orgname());
+            }else if (type->is_nodeedge()) {
+
+                sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+            }else if (type->is_collection()) {
+
+                sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+            }
+            //printf("type = %s name = %s\n", gm_get_type_string(type->get_typeid()), id->get_orgname());
+            Body.push(temp);
+        }
+    }
+
+    // Identify the dependencies in the foreach loop
+    mapForEachToVariables::iterator forLoopsVarListIter = transfer.forEachLoopVariables.find(f);
+    if (forLoopsVarListIter !=  transfer.forEachLoopVariables.end()) {
+        listOfVariables varList = forLoopsVarListIter->second;
+        for (listOfVariables::iterator it = varList.begin(); it != varList.end(); it++) {
+            ast_node* varUsed = *it;
+            if (varUsed->get_nodetype() == AST_FIELD) {
+                ast_field* f = (ast_field*)varUsed;
+                ast_typedecl* targetType = f->getTypeInfo()->get_target_type();
+                Body.push(", ");
+                sprintf(temp, "%s * %s", gm_get_type_string(targetType->get_typeid()), f->get_second()->get_orgname());
+                printf("ARGS = %s, Field of %s\n", f->get_second()->get_orgname(), f->get_first()->get_orgname());
+                Body.push(temp);
+            }
+        }
+    }
+    Body.push(") {\n");
 }
 
 void gm_cuda_gen::generate_sent_bfs(ast_bfs* i) {
@@ -877,12 +1463,12 @@ void gm_cuda_gen::generate_sent_block(ast_sentblock* i, bool need_br) {
 /*
 void gm_cuda_gen::generate_sent_return(ast_return* i) {
 
-}
+}*/
 
 void gm_cuda_gen::generate_sent_call(ast_call* i) {
 
 }
-
+/*
 void gm_cuda_gen::generate_sent_foreign(ast_foreign* f) {
 
 }*/
@@ -909,7 +1495,11 @@ void gm_cuda_gen::generate_proc(ast_procdef* proc) {
 
     // Parallel Regions Analysis
     gm_cuda_par_regions PRA = transfer;
+    currentProc = proc;
     generate_kernel_function(proc);
+
+    generate_sent(proc->get_body());
+
 }
 
 // Generate the Kernel call definition
@@ -917,12 +1507,48 @@ void gm_cuda_gen::generate_kernel_function(ast_procdef* proc) {
 
     gm_code_writer& Out = Body;
     std::string str("__global__ void ");
+    char temp[1024];
 
-    str = str + proc->get_procname()->get_genname();
+    str = str + proc->get_procname()->get_genname() + "_init";
     Out.push(str.c_str());
 
     Out.push("(");
     
+    std::list<ast_argdecl*>& inArgs = proc->get_in_args();
+    std::list<ast_argdecl*>::iterator i;
+    bool isFirst = true;
+    for (i = inArgs.begin(); i != inArgs.end(); i++) {
+        ast_typedecl* type = (*i)->get_type();
+        ast_idlist* idlist = (*i)->get_idlist();
+        for (int ii = 0; ii < idlist->get_length(); ii++) {
+            if (isFirst == false)
+                Out.push(", ");
+            isFirst = false;
+
+            ast_id* id = idlist->get_item(ii);
+            if (type->is_primitive()) {
+
+                sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+            }else if (type->is_graph()) {
+                sprintf(temp, "Graph %s", id->get_orgname());
+            }else if (type->is_property()) {
+                ast_typedecl* targetType = type->get_target_type();
+                sprintf(temp, "%s * %s", gm_get_type_string(targetType->get_typeid()), id->get_orgname());
+            }else if (type->is_nodeedge()) {
+
+                sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+            }else if (type->is_collection()) {
+
+                sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+            }
+            //printf("type = %s name = %s\n", gm_get_type_string(type->get_typeid()), id->get_orgname());
+            Out.push(temp);
+        }
+    }
+    //Out.push();
+
+    Out.push(") {\n");
+
     Out.NL();
 }
 

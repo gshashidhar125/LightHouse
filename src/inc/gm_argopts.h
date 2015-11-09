@@ -52,6 +52,8 @@ static const char* GMARGFLAG_GIRAPH_PACKAGE = "GiraphPackage";
 static const char* GMARGFLAG_JAVA_GRAPH_REPRESENTATION = "JavaGraph";
 static const char* GMARGFLAG_JAVA_PACKAGE = "JavaPackage";
 
+static const char* GMARGFLAG_DUMP_TREE = "DumpTree";
+
 // Add compiler options here
 static struct GM_comp_args GM_compiler_options[] = {
         { GMARGFLAG_HELP, GMARG_NULL, "Print help messages", NULL },
@@ -82,6 +84,7 @@ static struct GM_comp_args GM_compiler_options[] = {
 
         { GMARGFLAG_JAVA_GRAPH_REPRESENTATION, GMARG_STRING, "(For Java) Java Graph Representation. Valid values are 'csr' and 'ndm'", "csr" },
         { GMARGFLAG_JAVA_PACKAGE, GMARG_STRING, "(For Java) Package name for generated Java files", "" },
+        { GMARGFLAG_DUMP_TREE, GMARG_BOOL, "Enable Printing the AST Tree", "1" },
     };
 
 //----------------------------------------

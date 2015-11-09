@@ -14,7 +14,7 @@ class gm_cuda_gen: public gm_backend, public gm_code_generator {
 
 public:
     gm_cuda_gen() :
-        gm_code_generator(Body), fname(NULL), dname(NULL), f_header(NULL), f_body(NULL) {
+        gm_code_generator(Body)/*, gm_code_generator(cudaBody)*/, fname(NULL), dname(NULL), f_header(NULL), f_body(NULL), f_cudaBody(NULL), insideCudaKernel(false), currentProc(NULL) {
 
         init();
     }
@@ -42,6 +42,7 @@ public:
     virtual void do_generate_begin();
     virtual void do_generate_end();
 
+    void printToFile(const char* s);
 protected:
     std::list<gm_compile_step*> opt_steps;
     std::list<gm_compile_step*> gen_steps;
@@ -56,9 +57,15 @@ protected:
 
     gm_code_writer Header;
     gm_code_writer Body;
+    gm_code_writer cudaBody;
     FILE *f_header;
     FILE *f_body;
+    FILE *f_cudaBody;
     FILE *f_shell;
+
+    ast_procdef* currentProc;
+    bool insideCudaKernel;
+
     bool open_output_files();
     void close_output_files(bool remove_files = false);
 
@@ -112,9 +119,9 @@ public:
     virtual void generate_sent_while(ast_while* a);
     //virtual void generate_sent_block(ast_sentblock *b);
     virtual void generate_sent_block(ast_sentblock* b, bool need_br);
-    virtual void generate_sent_return(ast_return *r);
+    virtual void generate_sent_return(ast_return *r);*/
     virtual void generate_sent_call(ast_call* c);
-    virtual void generate_sent_foreign(ast_foreign* f);
+/*    virtual void generate_sent_foreign(ast_foreign* f);
 */    //virtual const char* get_function_name_map_reduce_assign(int reduceType);
 
     //virtual void generate_sent_block_enter(ast_sentblock *b);
@@ -123,6 +130,8 @@ public:
     virtual void generate_idlist(ast_idlist *i);*/
     virtual void generate_proc(ast_procdef* proc);
     virtual void generate_kernel_function(ast_procdef* proc);
+    virtual void generate_newKernelFunction(ast_foreach* f);
+    virtual void generate_CudaAssignForIterator(ast_id* iter, bool isParallel);
 
 };
 
