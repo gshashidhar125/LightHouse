@@ -105,8 +105,13 @@ void gm_cuda_gen::do_generate_begin() {
     sprintf(temp, "%s.h", fname);
     add_include(temp, Body, false);
     add_include(temp, cudaBody, false);
+    
+    sprintf(temp, "GlobalBarrier.cuh");
+    add_include(temp, cudaBody, false);
+    
     Body.NL();
     cudaBody.NL();
+    cudaBody.flush();
 }
 
 void gm_cuda_gen::do_generate_end() {
@@ -145,6 +150,7 @@ public:
 
     std::string codeGenName;
     std::string startIndexStr, endIndexStr;
+    std::string numOfThreads;
     ast_node* node;
     ast_typedecl* type;
     symbol* parent;
@@ -219,30 +225,41 @@ public:
         return newSymbol;
     }
 
+    std::string getNumOfThreads() {
+        getIndexParallel();
+        return numOfThreads;
+    }
+
     std::string getIndexParallel() {
         std::string indexStr;
         symbol* parentSym = getParent();
 
         if (parentSym->type->is_graph()) {
             if (gm_is_all_graph_node_iteration(iterType)) {
-                indexStr = "G1[tId]";
+                indexStr = "tId";
+                numOfThreads = "G.NumNodes";
             } else if (gm_is_all_graph_edge_iteration(iterType)) {
                 indexStr = "G2[tId]";
+                numOfThreads = "G.NumEdges";
             }
         } else if (parentSym->type->is_node()) {
             std::string temp = parentSym->getName();
             switch(iterType) {
                 case GMITER_NODE_NBRS:
                         indexStr = "G2[G1[" + temp + "] + tId]";
+                        numOfThreads = "G1[" + temp + " + 1] - G1[" + temp + "]";
                         break;
                 case GMITER_NODE_IN_NBRS:
                         indexStr = "IN-Nbrs G2[G1[" + temp + "] + tId]";
+                        numOfThreads = "IN-Nbrs G1[" + temp + " + 1] - G1[" + temp + "]";
                         break;
                 case GMITER_NODE_UP_NBRS:
                         indexStr = "UP-Nbrs G2[G1[" + temp + "] + tId]";
+                        numOfThreads = "Up-Nbrs G1[" + temp + " + 1] - G1[" + temp + "]";
                         break;
                 case GMITER_NODE_DOWN_NBRS:
                         indexStr = "DOWN-Nbrs G2[G1[" + temp + "] + tId]";
+                        numOfThreads = "DOWN-Nbrs G1[" + temp + " + 1] - G1[" + temp + "]";
                         break;
             }
         } else if (parentSym->type->is_edge()) {
@@ -250,15 +267,19 @@ public:
             switch(iterType) {
                 case GMITER_EDGE_NBRS:
                         indexStr = "Edge NBRS";
+                        numOfThreads = "Edge NBRS";
                         break;
                 case GMITER_EDGE_IN_NBRS:
                         indexStr = "Edge IN-Nbrs";
+                        numOfThreads = "Edge IN-Nbrs";
                         break;
                 case GMITER_EDGE_UP_NBRS:
                         indexStr = "Edge UP-Nbrs";
+                        numOfThreads = "Edge UP-Nbrs";
                         break;
                 case GMITER_EDGE_DOWN_NBRS:
                         indexStr = "Edge DOWN-Nbrs";
+                        numOfThreads = "Edge DOWN-Nbrs";
                         break;
             }
         } else if (parentSym->type->is_node_iterator()) {
@@ -267,15 +288,19 @@ public:
             switch(iterType) {
                 case GMITER_NODE_NBRS:
                         indexStr = "G2[G1[" + temp + "] + tId]";
+                        numOfThreads = "G1[" + temp + " + 1] - G1[" + temp + "]";
                         break;
                 case GMITER_NODE_IN_NBRS:
                         indexStr = "IN-Nbrs G2[G1[" + temp + "] + tId]";
+                        numOfThreads = "IN-Nbrs G1[" + temp + " + 1] - G1[" + temp + "]";
                         break;
                 case GMITER_NODE_UP_NBRS:
                         indexStr = "UP-Nbrs G2[G1[" + temp + "] + tId]";
+                        numOfThreads = "Up-Nbrs G1[" + temp + " + 1] - G1[" + temp + "]";
                         break;
                 case GMITER_NODE_DOWN_NBRS:
                         indexStr = "DOWN-Nbrs G2[G1[" + temp + "] + tId]";
+                        numOfThreads = "DOWN-Nbrs G1[" + temp + " + 1] - G1[" + temp + "]";
                         break;
             }
         } else if (parentSym->type->is_edge_iterator()) {
@@ -284,20 +309,22 @@ public:
             switch(iterType) {
                 case GMITER_EDGE_NBRS:
                         indexStr = "Edge NBRS";
+                        numOfThreads = "Edge NBRS";
                         break;
                 case GMITER_EDGE_IN_NBRS:
                         indexStr = "Edge IN-Nbrs";
+                        numOfThreads = "Edge IN-Nbrs";
                         break;
                 case GMITER_EDGE_UP_NBRS:
                         indexStr = "Edge UP-Nbrs";
+                        numOfThreads = "Edge UP-Nbrs";
                         break;
                 case GMITER_EDGE_DOWN_NBRS:
                         indexStr = "Edge DOWN-Nbrs";
+                        numOfThreads = "Edge DOWN-Nbrs";
                         break;
             }
         }
-        printf("########GetINDEX %s - type %d \n", indexStr.c_str(), parentSym->type->get_typeid());
-        //std::cout << "########GetINDEX " << indexStr << "\n";
         setCodeGenName(indexStr);
         return indexStr;
     }
@@ -393,8 +420,6 @@ public:
                         break;
             }
         }
-        printf("########GetINDEX from %s - to %s. type %d \n", startIndexStr.c_str(), endIndexStr.c_str(), parentSym->type->get_typeid());
-        //std::cout << "########GetINDEX " << indexStr << "\n";
         return startIndexStr;
     }
 };
@@ -1299,12 +1324,192 @@ void gm_cuda_gen::generate_sent_nop(ast_nop* i) {
     printf("\nEnded..\n\n");
 }
 
+std::string getAtomicUpdateInst(int reduceType) {
+
+    switch (reduceType) {
+        case GMREDUCE_PLUS: return std::string("atomicAdd");  break;
+        // TODO: Use Atomic CAS
+        case GMREDUCE_MULT:
+        case GMREDUCE_MIN: return std::string("atomicMin");  break;
+        case GMREDUCE_MAX: return std::string("atomicMax");  break;
+        case GMREDUCE_AND: return std::string("atomicAnd");  break;
+        case GMREDUCE_OR:  return std::string("atomicOr");  break;
+        // TODO:
+        case GMREDUCE_AVG:      break;
+        case GMREDUCE_DEFER:    break;
+    }
+}
+
+std::string gm_cuda_gen::getNewTempVariable(ast_node* n) {
+
+    std::string str;
+    if (n->get_nodetype() == AST_ID) {
+        str = std::string("local") + ((ast_id*)n)->get_orgname();
+    } else if (n->get_nodetype() == AST_FIELD) {
+        ast_field* f = (ast_field*)n;
+        str = std::string("local") + f->get_first()->get_orgname();
+        str = str + f->get_second()->get_orgname(); 
+    }
+    return str;
+}
+
 void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
 
     printf("Entered Line number %d\n", __LINE__);
     if(doPrint)
     i->dump_tree(2);
     printf("\nEnded..\n\n");
+
+    if (!i->has_lhs_list()) {
+
+        Body.push(getAtomicUpdateInst(i->get_reduce_type()).c_str());
+        Body.push("(&");
+        if (i->is_target_scalar()) {
+            generate_lhs_id(i->get_lhs_scala());
+        } else {
+            generate_lhs_field(i->get_lhs_field());
+        }
+        Body.push(", ");
+        generate_expr(i->get_rhs());
+        Body.pushln(");");
+    } else {
+        std::string str;
+        // TODO
+        //str = getNewVariable(integer, "expr");
+        Body.push("expr = ");
+        generate_expr(i->get_rhs());
+        Body.pushln(";");
+
+        Body.push(getAtomicUpdateInst(i->get_reduce_type()).c_str());
+        Body.push("(&");
+        if (i->is_target_scalar()) {
+            generate_lhs_id(i->get_lhs_scala());
+        } else {
+            generate_lhs_field(i->get_lhs_field());
+        }
+        Body.push(", ");
+        Body.push("expr");
+        //generate_expr(i->get_rhs());
+        Body.pushln(");");
+
+        printf("Reduce ASSIGN######\n");
+        std::list<ast_node*> lhsList = i->get_lhs_list();
+        printf("LHS List Nodes:");
+        for (std::list<ast_node*>::iterator it = lhsList.begin();
+             it != lhsList.end(); it++) {
+            ast_node* lhsVar = *it;
+            lhsVar->dump_tree(2);
+        }
+        std::list<ast_expr*> rhsList = i->get_rhs_list();
+        if (rhsList.size() > 0) {
+            printf("Has rhs list\n");
+            printf("RHS List Nodes:");
+            for (std::list<ast_expr*>::iterator it = rhsList.begin();
+                 it != rhsList.end(); it++) {
+                ast_expr* rhsVar = *it;
+                rhsVar->dump_tree(2);
+            }
+        }
+        printf("\nBound Start\n");
+        i->get_bound()->dump_tree(2);
+        printf("Bound Stop\n");
+        printf("arg_minmax = %d\n", i->is_argminmax_assign());
+        printf("is_reference = %d\n", i->is_reference());
+        printf("\n");
+
+        assert(i->get_reduce_type() == GMREDUCE_MAX ||
+               i->get_reduce_type() == GMREDUCE_MIN);
+        Body.push("if (localExpr ");
+        // TODO
+        //str = getNewVariable(integer, "localExpr");
+        if (i->get_reduce_type() == GMREDUCE_MAX)
+            Body.push("<= ");
+        else if (i->get_reduce_type() == GMREDUCE_MIN)
+            Body.push(">= ");
+        else
+            assert(false);
+
+        Body.pushln("expr) {");
+        Body.pushln("localExpr = expr;");
+
+        ast_sentblock* newStmts = ast_sentblock::new_sentblock();
+        
+        ast_id* barrierId = ast_id::new_id("softwareBarrier", 0, 1);
+        ast_call* barrierCall = ast_call::new_call(barrierId);
+        newStmts->add_sent(barrierCall);
+        
+        ast_expr* condLeft = ast_expr::new_id_expr(ast_id::new_id("localExpr", 0, 1));
+        ast_expr* condRight;
+        if (i->is_target_scalar()) {
+            condRight = ast_expr::new_id_expr(i->get_lhs_scala());
+        } else {
+            condRight = ast_expr::new_field_expr(i->get_lhs_field());
+        }
+        ast_expr* ifCond = ast_expr::new_biop_expr(GMOP_EQ, condLeft, condRight);
+
+        ast_id* chooseThreadVar = ast_id::new_id("chooseThread", 0, 1);
+        ast_expr* threadId = ast_expr::new_id_expr(ast_id::new_id("threadIdx.x", 0, 1));
+        ast_sent* chooseThreadAssign = ast_assign::new_assign_scala(chooseThreadVar, threadId);
+        ast_sent* newIf = ast_if::new_if(ifCond, chooseThreadAssign, NULL);
+        newStmts->add_sent(newIf);
+        newStmts->add_sent(barrierCall);
+
+        std::list<ast_node*>::iterator lhsListIt = i->get_lhs_list().begin();
+        std::list<ast_expr*>::iterator rhsListIt = i->get_rhs_list().begin();
+        std::list<ast_node*>::iterator lhsListEnd = i->get_lhs_list().end();
+        std::list<ast_expr*>::iterator rhsListEnd = i->get_rhs_list().end();
+        ast_sentblock* assignToGlobals = ast_sentblock::new_sentblock();
+        for (; (lhsListIt != lhsListEnd) && 
+                (rhsListIt != rhsListEnd); 
+                lhsListIt++, rhsListIt++) {
+            Body.push(getNewTempVariable(*lhsListIt).c_str());
+            // TODO
+            //str = getNewVariable(integer, "local" + id->get_orgname(),);
+            Body.push(" = ");
+            generate_expr(*rhsListIt);
+            Body.pushln(";");
+
+            if ((*lhsListIt)->get_nodetype() == AST_ID) {
+                ast_id* targetId = (ast_id*)*lhsListIt;
+                std::string str = getNewTempVariable(targetId);
+                ast_id* localVar = ast_id::new_id(str.c_str(), 0, 1);
+                ast_expr* localExpr = ast_expr::new_id_expr(localVar);
+                ast_assign* newAssign = ast_assign::new_assign_scala(targetId, localExpr);
+                assignToGlobals->add_sent(newAssign);
+            } else if ((*lhsListIt)->get_nodetype() == AST_FIELD) {
+                ast_field* targetField = (ast_field*)*lhsListIt;
+                std::string str = getNewTempVariable(targetField);
+                ast_id* localVar = ast_id::new_id(str.c_str(), 0, 1);
+                ast_expr* localExpr = ast_expr::new_id_expr(localVar);
+                ast_assign* newAssign = ast_assign::new_assign_field(targetField, localExpr);
+                assignToGlobals->add_sent(newAssign);
+            }
+        }
+        condLeft = ast_expr::new_id_expr(ast_id::new_id("chooseThread", 0, 1));
+        condRight = ast_expr::new_id_expr(ast_id::new_id("threadIdx.x", 0, 1));
+        ifCond = ast_expr::new_biop_expr(GMOP_EQ, condLeft, condRight);
+        newIf = ast_if::new_if(ifCond, assignToGlobals, NULL);
+        newStmts->add_sent(newIf);
+
+        ast_id* boundIter = i->get_bound();
+        ast_node* parent = i->get_parent();
+        ast_foreach* forEachStmt;
+        bool found = false;
+        while(!found) {
+            if (parent->get_nodetype() == AST_FOREACH) {
+                forEachStmt = (ast_foreach*)parent;
+                if (forEachStmt->is_parallel() &&
+                    !strcmp(forEachStmt->get_iterator()->get_orgname(), boundIter->get_orgname())) {
+                    printf("Found the bounding foreach\n");
+                    found = true;
+                }
+            }
+            parent = parent->get_parent();
+        }
+        forEachStmt->set_GlobalBarrier(true);
+        forEachStmt->setNewStmtsAfterBarrier(newStmts);
+        Body.pushln("}");
+    }
 }
 
 /*void gm_cuda_gen::generate_sent_defer_assign(ast_assign* i) {
@@ -1326,28 +1531,39 @@ void gm_cuda_gen::generate_sent_foreach(ast_foreach* i) {
     i->dump_tree(2);
     printf("\nEnded..\n\n");
 
-    Body.push("}\n");
+    //Body.push("}\n");
 
-    gm_code_writer temp;
+    gm_code_writer *tempBody = new gm_code_writer();
+    std::string callStr;
     if (i->is_parallel()) {
         insideCudaKernel = true;
-        generate_newKernelFunction(i);
-        temp = Body;
+        //Body.flush();
+        *tempBody = Body;
         Body = cudaBody;
+        callStr = generate_newKernelFunction(i);
     }
 
     generate_CudaAssignForIterator(i->get_iterator(), i->is_parallel());
 
     if (i->get_filter() != NULL) {
-
+        printf("For Each Conditional %%%%%%%%%%\n");
     }
 
     generate_sent(i->get_body());
 
     if (i->is_parallel()) {
-        Body.push("}\n");
+        // Create Global Barrier after the foreach parallel loop
+        if (i->need_GlobalBarrier()) {
+            assert(i->is_parallel() && i->need_GlobalBarrier());
+            generate_sent_block(i->getNewStmtsAfterBarrier(), false);
+        }
+         
+        Body.pushln("}");
+        Body.flush();
+
         insideCudaKernel = false;
-        Body = temp;
+        Body = *tempBody;
+        Body.push(callStr.c_str());
     }
 }
 
@@ -1370,45 +1586,67 @@ void gm_cuda_gen::generate_CudaAssignForIterator(ast_id* iter, bool isParallel) 
     }
 }
 
-void gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
+std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
 
     static int forLoopId = 0;
     char temp[1024];
     sprintf(temp, "%d", forLoopId);
-    std::string str = "__global__ void forEachKernel" + std::string(temp) + std::string(" (");
     forLoopId++;
-    
+    std::string str = "__global__ void forEachKernel" + std::string(temp) + std::string(" (");
+    std::string callStr = "forEachKernel" + std::string(temp) + std::string("<<<");
+    symbol* iterSym = transfer.findSymbol(f->get_iterator()->get_orgname());
+    callStr = callStr + iterSym->getNumOfThreads() + ", " + "1024>>>(";
+
     Body.indent = 0;
     Body.push(str.c_str());
 
     std::list<ast_argdecl*>& inArgs = currentProc->get_in_args();
     std::list<ast_argdecl*>::iterator i;
+    std::list<std::string>argList;
     bool isFirst = true;
     for (i = inArgs.begin(); i != inArgs.end(); i++) {
         ast_typedecl* type = (*i)->get_type();
         ast_idlist* idlist = (*i)->get_idlist();
         for (int ii = 0; ii < idlist->get_length(); ii++) {
-            if (isFirst == false)
+            if (isFirst == false) {
                 Body.push(", ");
+                callStr = callStr + ", ";
+            }
             isFirst = false;
 
             ast_id* id = idlist->get_item(ii);
+            bool found = false;
+            for (std::list<std::string>::iterator strIt = argList.begin();
+                 strIt != argList.end(); strIt++) {
+                if (!strcmp(id->get_orgname(), (*strIt).c_str())) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                continue;
+            argList.push_back(id->get_orgname());
+
             if (type->is_primitive()) {
 
                 sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+                callStr.append(id->get_orgname());
             }else if (type->is_graph()) {
                 sprintf(temp, "Graph %s", id->get_orgname());
+                callStr.append(id->get_orgname());
             }else if (type->is_property()) {
                 ast_typedecl* targetType = type->get_target_type();
                 sprintf(temp, "%s * %s", gm_get_type_string(targetType->get_typeid()), id->get_orgname());
+                callStr.append(id->get_orgname());
             }else if (type->is_nodeedge()) {
 
                 sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+                callStr.append(id->get_orgname());
             }else if (type->is_collection()) {
 
                 sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+                callStr.append(id->get_orgname());
             }
-            //printf("type = %s name = %s\n", gm_get_type_string(type->get_typeid()), id->get_orgname());
             Body.push(temp);
         }
     }
@@ -1422,14 +1660,30 @@ void gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
             if (varUsed->get_nodetype() == AST_FIELD) {
                 ast_field* f = (ast_field*)varUsed;
                 ast_typedecl* targetType = f->getTypeInfo()->get_target_type();
+                
+                bool found = false;
+                for (std::list<std::string>::iterator strIt = argList.begin();
+                     strIt != argList.end(); strIt++) {
+                    if (!strcmp(f->get_second()->get_orgname(), (*strIt).c_str())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found)
+                    continue;
+                argList.push_back(f->get_second()->get_orgname());
+
                 Body.push(", ");
+                callStr.append(", ");
                 sprintf(temp, "%s * %s", gm_get_type_string(targetType->get_typeid()), f->get_second()->get_orgname());
-                printf("ARGS = %s, Field of %s\n", f->get_second()->get_orgname(), f->get_first()->get_orgname());
                 Body.push(temp);
+                callStr.append(f->get_second()->get_orgname());
             }
         }
     }
     Body.push(") {\n");
+    callStr.append(");\n");
+    return callStr;
 }
 
 void gm_cuda_gen::generate_sent_bfs(ast_bfs* i) {
@@ -1465,8 +1719,17 @@ void gm_cuda_gen::generate_sent_return(ast_return* i) {
 
 }*/
 
-void gm_cuda_gen::generate_sent_call(ast_call* i) {
+void gm_cuda_gen::generate_sent_call(ast_call* c) {
 
+    //assert(c->is_builtin_call());
+    if (c->is_builtin_call())
+        generate_expr_builtin(c->get_builtin());
+    else {
+        generate_lhs_id(c->getCallName());
+        Body.push("(");
+        Body.push(")");
+    }
+    Body.pushln(";");
 }
 /*
 void gm_cuda_gen::generate_sent_foreign(ast_foreign* f) {
@@ -1506,10 +1769,10 @@ void gm_cuda_gen::generate_proc(ast_procdef* proc) {
 void gm_cuda_gen::generate_kernel_function(ast_procdef* proc) {
 
     gm_code_writer& Out = Body;
-    std::string str("__global__ void ");
+    std::string str("void ");
     char temp[1024];
 
-    str = str + proc->get_procname()->get_genname() + "_init";
+    str = str + proc->get_procname()->get_genname() + "_CPU";
     Out.push(str.c_str());
 
     Out.push("(");
@@ -1541,7 +1804,6 @@ void gm_cuda_gen::generate_kernel_function(ast_procdef* proc) {
 
                 sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
             }
-            //printf("type = %s name = %s\n", gm_get_type_string(type->get_typeid()), id->get_orgname());
             Out.push(temp);
         }
     }

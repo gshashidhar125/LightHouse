@@ -130,9 +130,10 @@ public:
     virtual void generate_idlist(ast_idlist *i);*/
     virtual void generate_proc(ast_procdef* proc);
     virtual void generate_kernel_function(ast_procdef* proc);
-    virtual void generate_newKernelFunction(ast_foreach* f);
+    virtual std::string generate_newKernelFunction(ast_foreach* f);
     virtual void generate_CudaAssignForIterator(ast_id* iter, bool isParallel);
 
+    virtual std::string getNewTempVariable(ast_node* n);
 };
 
 extern gm_cuda_gen CUDA_BE;

@@ -2516,7 +2516,7 @@ public:
     }
 private:
     ast_foreach() :
-            ast_sent(AST_FOREACH), body(NULL), iterator(NULL), source(NULL), source2(NULL), cond(NULL), seq_exe(false), use_reverse(false), iter_type(0) , source_field(NULL), is_src_field(false) {
+            ast_sent(AST_FOREACH), body(NULL), iterator(NULL), source(NULL), source2(NULL), cond(NULL), seq_exe(false), use_reverse(false), iter_type(0) , source_field(NULL), is_src_field(false), GlobalBarrier(false) {
         create_symtabs();
     }
 
@@ -2645,6 +2645,20 @@ public:
         use_reverse = b;
     }
 
+    bool need_GlobalBarrier() {
+        return GlobalBarrier;
+    }
+    void set_GlobalBarrier(bool b) {
+        GlobalBarrier = b;
+    }
+
+    void setNewStmtsAfterBarrier(ast_sentblock* s) {
+        stmtsAfterBarrier = s;
+    }
+    ast_sentblock* getNewStmtsAfterBarrier() {
+        return stmtsAfterBarrier;
+    }
+
 private:
     ast_sent* body;
     ast_id* iterator;
@@ -2656,6 +2670,9 @@ private:
     bool seq_exe;
     bool use_reverse;
     bool is_src_field;
+
+    bool GlobalBarrier;
+    ast_sentblock* stmtsAfterBarrier;
 };
 
 // BFS or DFS
@@ -2826,6 +2843,11 @@ public:
         C->is_blt_in = true;
         return C;
     }
+    static ast_call* new_call(ast_id* name) {
+        ast_call* c = new ast_call();
+        c->setCallName(name);
+        return c;
+    }
 
 private:
     ast_call() :
@@ -2845,9 +2867,16 @@ public:
         return is_blt_in;
     }
 
+    ast_id* getCallName() {
+        return callName;
+    }
+    void setCallName(ast_id* name) {
+        callName = name;
+    }
 private:
     ast_expr_builtin* b_in;
     bool is_blt_in;
+    ast_id* callName;
 };
 
 class ast_if: public ast_sent
