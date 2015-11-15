@@ -10,11 +10,12 @@
 
 #include <list>
 
+class scope;
 class gm_cuda_gen: public gm_backend, public gm_code_generator {
 
 public:
     gm_cuda_gen() :
-        gm_code_generator(Body)/*, gm_code_generator(cudaBody)*/, fname(NULL), dname(NULL), f_header(NULL), f_body(NULL), f_cudaBody(NULL), insideCudaKernel(false), currentProc(NULL) {
+        gm_code_generator(Body)/*, gm_code_generator(cudaBody)*/, fname(NULL), dname(NULL), f_header(NULL), f_body(NULL), f_cudaBody(NULL), insideCudaKernel(false), currentProc(NULL), currentScope(NULL), globalScope(NULL) {
 
         init();
     }
@@ -65,6 +66,8 @@ protected:
 
     ast_procdef* currentProc;
     bool insideCudaKernel;
+    scope* currentScope;
+    scope* globalScope;
 
     bool open_output_files();
     void close_output_files(bool remove_files = false);
@@ -84,8 +87,10 @@ public:
     virtual void generate_expr_nil(ast_expr* e);
     //virtual void generate_expr_type_conversion(ast_expr* e);
 
-    //virtual const char* get_type_string(ast_typedecl* t);
+    virtual const char* get_type_string(ast_typedecl* t);
     virtual const char* get_type_string(int prim_type);
+    //virtual ast_typedecl* getNewTypeDecl(int typeId);
+    virtual void generateMacroDefine(scope* s);
 
 /*    virtual void generate_expr_list(std::list<ast_expr*>& L);
     virtual void generate_expr(ast_expr* e);
@@ -126,14 +131,25 @@ public:
 
     //virtual void generate_sent_block_enter(ast_sentblock *b);
     //virtual void generate_sent_block_exit(ast_sentblock* b);
-/*
-    virtual void generate_idlist(ast_idlist *i);*/
+
+    virtual void generate_idlist(ast_idlist *i);
+    virtual void generate_idlist_primitive(ast_idlist* idList);
+    virtual void generate_lhs_default(int type);
     virtual void generate_proc(ast_procdef* proc);
     virtual void generate_kernel_function(ast_procdef* proc);
     virtual std::string generate_newKernelFunction(ast_foreach* f);
     virtual void generate_CudaAssignForIterator(ast_id* iter, bool isParallel);
 
     virtual std::string getNewTempVariable(ast_node* n);
+    virtual void setGlobalScope(scope* s) {
+        globalScope = s;
+    }
+    virtual scope* getCurrentScope(){ return currentScope; }
+
+    virtual void setCurrentScope(scope* s) {
+        currentScope = s;
+    }
+    virtual scope* getGlobalScope() {   return globalScope; }
 };
 
 extern gm_cuda_gen CUDA_BE;

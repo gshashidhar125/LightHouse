@@ -136,6 +136,12 @@ enum memory {
     GPUMemory,
 };
 
+enum SCOPE_T {
+    THREAD_LOCAL,
+    //SHARED_MEMORY,
+    GLOBAL,
+};
+
 class symbol {
 
 public:
@@ -422,6 +428,134 @@ public:
         }
         return startIndexStr;
     }
+};
+
+ast_typedecl* getNewTypeDecl(int typeId) {
+
+    if (gm_is_prim_type(typeId)) {
+        return ast_typedecl::new_primtype(typeId);
+    } else if (gm_is_nodeedge_type(typeId)) {
+        return ast_typedecl::new_primtype(GMTYPE_INT);
+    } else if (gm_is_node_iterator_type(typeId)) {
+        return ast_typedecl::new_primtype(GMTYPE_INT);
+    } else if (gm_is_edge_iterator_type(typeId)){
+        return ast_typedecl::new_primtype(GMTYPE_INT);
+    } else {
+        // Not expected any other type.
+        assert(false);
+    }
+    return NULL;
+}
+
+typedef std::pair<ast_vardecl*, SCOPE_T>scope_entry;
+class scope {
+
+public:
+    scope(ast_sent* stmt, ast_procdef* proc) : enclosingStmt(stmt), enclosingProc(proc), parent(NULL), forEachScope(true) { }
+    scope(ast_procdef* proc) : enclosingProc(proc), parent(NULL), forEachScope(false) {}
+
+    bool isForEachScope() {
+        return forEachScope;
+    }
+    void setParentScope(scope* p) {
+        parent = p;
+    }
+
+    std::list<scope_entry> getScopeEntries() {
+        return variables;
+    }
+
+    scope* getParentScope() {  return parent;  }
+
+    void setMacroName(std::string n) { name = n;  }
+    std::string getMacroName()  { return name;  }
+
+    void addVariableToScope(ast_id* varId, int typeId) {
+        std::list<scope_entry>::iterator varDeclIt = variables.begin();
+        ast_idlist* correctListToAdd = NULL;
+        SCOPE_T currentScope;
+        if (parent == NULL)
+            currentScope = GLOBAL;
+        else
+            currentScope = THREAD_LOCAL;
+        for (; varDeclIt != variables.end(); varDeclIt++) {
+            ast_vardecl* vars = (*varDeclIt).first;
+            ast_idlist* varList = vars->get_idlist();
+            if (varList->contains(varId->get_orgname()) == true) {
+                if (vars->get_type()->get_typeid() == typeId) {
+                    // Already the variable is inserted to the scope
+                    assert(correctListToAdd == NULL);
+                    return;
+                } else {
+                    // The same variable is declared as different type
+                    assert(false);
+                }
+            } else if (vars->get_type()->get_typeid() == typeId /*&&
+                       (*varDeclIt).second == currentScope*/) {
+                //assert(correctListToAdd == NULL);
+                correctListToAdd = varList;
+            }
+        }
+
+        // Search in the Parent Scope
+        if (parent != NULL) {
+            varDeclIt = parent->variables.begin();
+            for (; varDeclIt != parent->variables.end(); varDeclIt++) {
+                ast_vardecl* vars = (*varDeclIt).first;
+                ast_idlist* varList = vars->get_idlist();
+                if (varList->contains(varId->get_orgname()) == true) {
+                    if (vars->get_type()->get_typeid() == typeId) {
+                        // Already the variable is inserted to the scope
+                        assert(correctListToAdd == NULL);
+                        return;
+                    } else {
+                        // The same variable is declared as different type
+                        assert(false);
+                    }
+                }/* else if (vars->get_type()->get_typeid() == typeId) {
+                    assert(correctListToAdd == NULL);
+                    correctListToAdd = varList;
+                }*/
+            }
+        }
+        if (correctListToAdd == NULL) {
+            ast_typedecl* newType = getNewTypeDecl(typeId);
+            ast_vardecl* newVarDecl = ast_vardecl::new_vardecl(newType, varId);
+
+            scope_entry newScopeEntry(newVarDecl, currentScope);
+            variables.push_back(newScopeEntry);
+            return;
+        }
+            
+        //correctListToAdd->add_id(varId);
+        if (parent != NULL)
+            printf("Sizeof Scope: %d, Parent Scope = %d\n", variables.size(), parent->getScopeEntries().size());
+        else
+            printf("Sizeof Scope: %d\n", variables.size());
+
+    }
+
+    void printScopeVariables() {
+
+        std::list<scope_entry>::iterator varDeclIt = variables.begin();
+        for (; varDeclIt != variables.end(); varDeclIt++) {
+            ast_vardecl* vars = (*varDeclIt).first;
+            ast_idlist* varList = vars->get_idlist();
+            printf("Type = ");
+            vars->get_type()->dump_tree(2);
+            printf("Variables = \n");
+            varList->dump_tree(2);
+        }
+    }
+
+protected:
+    ast_sent* enclosingStmt;
+    ast_procdef* enclosingProc;
+    scope* parent;
+    std::string name;
+    std::list<scope_entry> variables;
+    bool forEachScope;
+
 };
 
 bool isSameFieldNames(ast_field* f1, ast_field* f2) {
@@ -714,17 +848,17 @@ public:
             }
             if(doPrint)
             (*symIt).getTypeDecl()->dump_tree(0);
-            /*if ((*symIt).getMemLoc() == GPUMemory)
+            if ((*symIt).getMemLoc() == GPUMemory)
                 printf(", **GPU Memory**\n");
-            else*/
+            else
                 printf("\n");
             for (std::list<symbol*>::iterator childIt = (*symIt).children.begin(); childIt != (*symIt).children.end(); childIt++) {
                 printf("        %s, Type = %s   ", (*childIt)->getName(), gm_get_type_string((*childIt)->getType()));
                 if(doPrint)
                 (*childIt)->getTypeDecl()->dump_tree(0);
-                /*if ((*childIt)->getMemLoc() == GPUMemory)
+                if ((*childIt)->getMemLoc() == GPUMemory)
                     printf(", **GPU Memory**\n");
-                else*/
+                else
                     printf("\n");
             }
         }
@@ -1037,6 +1171,7 @@ void gm_cuda_gen::generate_lhs_id(ast_id* i) {
     i->dump_tree(2);
     printf("\nEnded..\n\n");
     Body.push(i->get_orgname());
+    currentScope->addVariableToScope(i, i->getTypeSummary());
 }
 
 void gm_cuda_gen::generate_lhs_field(ast_field* i) {
@@ -1059,6 +1194,7 @@ void gm_cuda_gen::generate_rhs_id(ast_id* i) {
     i->dump_tree(2);
     printf("\nEnded..\n\n");
     Body.push(i->get_orgname());
+    currentScope->addVariableToScope(i, i->getTypeSummary());
 }
 
 void gm_cuda_gen::generate_rhs_field(ast_field* i) {
@@ -1256,9 +1392,60 @@ void gm_cuda_gen::generate_expr_nil(ast_expr* i) {
 
 }*/
 
-/*const char* gm_cuda_gen::get_type_string(ast_typedecl* t) {
+const char* gm_cuda_gen::get_type_string(ast_typedecl* t) {
 
-}*/
+    if ((t == NULL) || (t->is_void())) {
+        return "void";
+    }
+
+    if (t->is_primitive()) {
+        return get_type_string(t->get_typeid());
+    } else if (t->is_property()) {
+        ast_typedecl* t2 = t->get_target_type();
+        assert(t2 != NULL);
+        if (t2->is_primitive()) {
+            switch (t2->get_typeid()) {
+                case GMTYPE_BYTE:
+                    return "char_t*";
+                case GMTYPE_SHORT:
+                    return "int16_t*";
+                case GMTYPE_INT:
+                    return "int32_t*";
+                case GMTYPE_LONG:
+                    return "int64_t*";
+                case GMTYPE_FLOAT:
+                    return "float*";
+                case GMTYPE_DOUBLE:
+                    return "double*";
+                case GMTYPE_BOOL:
+                    return "bool*";
+                default:
+                    assert(false);
+                    break;
+            }
+        } else if (t2->is_nodeedge()) {
+            char temp[128];
+            sprintf(temp, "%s*", /*get_lib()->*/get_type_string(t2));
+            return gm_strdup(temp);
+        } else if (t2->is_collection()) {
+            char temp[128];
+            sprintf(temp, "%s<%s>&", "prop"/*PROP_OF_COL*/, /*get_lib()->*/get_type_string(t2));
+            return gm_strdup(temp);
+        } else {
+            assert(false);
+        }
+    } else if (t->is_map()) {
+        char temp[256];
+        ast_maptypedecl* mapType = (ast_maptypedecl*) t;
+        const char* keyType = get_type_string(mapType->get_key_type());
+        const char* valueType = get_type_string(mapType->get_value_type());
+        sprintf(temp, "gm_map<%s, %s>", keyType, valueType);
+        return gm_strdup(temp);
+    } else
+        return /*get_lib()->*/get_type_string(t);
+
+    return "ERROR";
+}
 
 const char* gm_cuda_gen::get_type_string(int type_id) {
     
@@ -1286,6 +1473,7 @@ const char* gm_cuda_gen::get_type_string(int type_id) {
         return "UnknownType";//get_lib()->get_type_string(type_id);
     }
 }
+
 /*
 void gm_cuda_gen::generate_expr_list(std::list<ast_expr*>& L) {
 }
@@ -1353,6 +1541,27 @@ std::string gm_cuda_gen::getNewTempVariable(ast_node* n) {
     return str;
 }
 
+void gm_cuda_gen::generateMacroDefine(scope* s) {
+    
+    gm_code_writer *tempBody = new gm_code_writer();
+    *tempBody = Body;
+    Header.flush();
+    Body = Header;
+    std::list<scope_entry>varDecls = s->getScopeEntries();
+    std::list<scope_entry>::iterator varDeclIt = varDecls.begin();
+    Body.push("#define ");
+    Body.push(s->getMacroName().c_str());
+    Body.pushln(" \\");
+    Body.push("{");
+    for (; varDeclIt != varDecls.end(); varDeclIt++) {
+        ast_vardecl* vars = (*varDeclIt).first;
+        generate_sent(vars);
+    }
+    Body.pushln("}");
+    Body.flush();
+    Body = *tempBody;
+}
+
 void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
 
     printf("Entered Line number %d\n", __LINE__);
@@ -1377,6 +1586,15 @@ void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
         // TODO
         //str = getNewVariable(integer, "expr");
         Body.push("expr = ");
+        gm_symtab* varSymtab = currentProc->get_symtab_var();
+        ast_id* newId = ast_id::new_id("expr", 0, 1);
+        // TODO: Get right symtab info
+        ast_typedecl* newType = getNewTypeDecl(i->get_rhs()->get_type_summary());
+        gm_symtab_entry* e;// = new gm_symtab_entry(newId, newType);
+        //newId->setSymInfo(e);
+        gm_symtab_entry* olde;
+        bool isOkay = varSymtab->check_duplicate_and_add_symbol(newId, newType, e);
+        currentScope->addVariableToScope(newId, i->get_rhs()->get_type_summary());
         generate_expr(i->get_rhs());
         Body.pushln(";");
 
@@ -1419,6 +1637,17 @@ void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
 
         assert(i->get_reduce_type() == GMREDUCE_MAX ||
                i->get_reduce_type() == GMREDUCE_MIN);
+
+        //newId = ast_id::new_id("localExpr", 0, 1);
+        if (i->is_target_scalar()) {
+            newId = i->get_lhs_scala()->copy(true);
+        } else {
+            newId = i->get_lhs_field()->get_second()->copy(true);
+        }
+        newId->set_orgname("localExpr");
+        newType = getNewTypeDecl(i->get_rhs()->get_type_summary());
+        //isOkay = varSymtab->check_duplicate_and_add_symbol(newId, newType, e);
+        currentScope->addVariableToScope(newId, i->get_rhs()->get_type_summary());
         Body.push("if (localExpr ");
         // TODO
         //str = getNewVariable(integer, "localExpr");
@@ -1438,7 +1667,10 @@ void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
         ast_call* barrierCall = ast_call::new_call(barrierId);
         newStmts->add_sent(barrierCall);
         
-        ast_expr* condLeft = ast_expr::new_id_expr(ast_id::new_id("localExpr", 0, 1));
+        //newId = ast_id::new_id("localExpr", 0, 1);
+        //newType = getNewTypeDecl(i->get_rhs()->get_type_summary());
+        //isOkay = varSymtab->check_duplicate_and_add_symbol(newId, newType, e);
+        ast_expr* condLeft = ast_expr::new_id_expr(newId);
         ast_expr* condRight;
         if (i->is_target_scalar()) {
             condRight = ast_expr::new_id_expr(i->get_lhs_scala());
@@ -1447,8 +1679,22 @@ void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
         }
         ast_expr* ifCond = ast_expr::new_biop_expr(GMOP_EQ, condLeft, condRight);
 
-        ast_id* chooseThreadVar = ast_id::new_id("chooseThread", 0, 1);
-        ast_expr* threadId = ast_expr::new_id_expr(ast_id::new_id("threadIdx.x", 0, 1));
+        ast_id* chooseThreadVar;
+        if (i->is_target_scalar()) {
+            chooseThreadVar = i->get_lhs_scala()->copy(true);
+        } else {
+            chooseThreadVar = i->get_lhs_field()->get_second()->copy(true);
+        }
+        chooseThreadVar->set_orgname("chooseThread");
+        globalScope->addVariableToScope(chooseThreadVar, GMTYPE_INT);
+        ast_id* threadIdx;
+        if (i->is_target_scalar()) {
+            threadIdx  = i->get_lhs_scala()->copy(true);
+        } else {
+            threadIdx = i->get_lhs_field()->get_second()->copy(true);
+        }
+        threadIdx->set_orgname("threadIdx.x");
+        ast_expr* threadId = ast_expr::new_id_expr(threadIdx);
         ast_sent* chooseThreadAssign = ast_assign::new_assign_scala(chooseThreadVar, threadId);
         ast_sent* newIf = ast_if::new_if(ifCond, chooseThreadAssign, NULL);
         newStmts->add_sent(newIf);
@@ -1472,10 +1718,13 @@ void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
             if ((*lhsListIt)->get_nodetype() == AST_ID) {
                 ast_id* targetId = (ast_id*)*lhsListIt;
                 std::string str = getNewTempVariable(targetId);
-                ast_id* localVar = ast_id::new_id(str.c_str(), 0, 1);
+                ast_id* localVar = targetId->copy(true);
+                localVar->set_orgname(str.c_str());
                 ast_expr* localExpr = ast_expr::new_id_expr(localVar);
                 ast_assign* newAssign = ast_assign::new_assign_scala(targetId, localExpr);
                 assignToGlobals->add_sent(newAssign);
+                currentScope->addVariableToScope(targetId, targetId->getTypeSummary());
+                currentScope->addVariableToScope(localVar, targetId->getTypeSummary());
             } else if ((*lhsListIt)->get_nodetype() == AST_FIELD) {
                 ast_field* targetField = (ast_field*)*lhsListIt;
                 std::string str = getNewTempVariable(targetField);
@@ -1485,8 +1734,8 @@ void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
                 assignToGlobals->add_sent(newAssign);
             }
         }
-        condLeft = ast_expr::new_id_expr(ast_id::new_id("chooseThread", 0, 1));
-        condRight = ast_expr::new_id_expr(ast_id::new_id("threadIdx.x", 0, 1));
+        condLeft = ast_expr::new_id_expr(chooseThreadVar);
+        condRight = ast_expr::new_id_expr(threadIdx);
         ifCond = ast_expr::new_biop_expr(GMOP_EQ, condLeft, condRight);
         newIf = ast_if::new_if(ifCond, assignToGlobals, NULL);
         newStmts->add_sent(newIf);
@@ -1516,12 +1765,66 @@ void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
 
 }*/
 
-void gm_cuda_gen::generate_sent_vardecl(ast_vardecl* i) {
+void gm_cuda_gen::generate_sent_vardecl(ast_vardecl* v) {
 
     printf("Entered Line number %d\n", __LINE__);
     if(doPrint)
-    i->dump_tree(2);
+    v->dump_tree(2);
     printf("\nEnded..\n\n");
+    ast_typedecl* t = v->get_type();
+
+    if (t->is_collection_of_collection()) {
+        Body.push(get_type_string(t));
+        ast_typedecl* targetType = t->get_target_type();
+        Body.push("<");
+        Body.push(get_type_string(t->getTargetTypeSummary()));
+        Body.push("> ");
+        ast_idlist* idl = v->get_idlist();
+        assert(idl->get_length() == 1);
+        generate_lhs_id(idl->get_item(0));
+        //get_lib()->add_collection_def(idl->get_item(0));
+        return;
+    }
+
+    if (t->is_map()) {
+        ast_maptypedecl* map = (ast_maptypedecl*) t;
+        ast_idlist* idl = v->get_idlist();
+        assert(idl->get_length() == 1);
+        //get_lib()->add_map_def(map, idl->get_item(0));
+        return;
+    }
+
+    if (t->is_sequence_collection()) {
+        //for sequence-list-vector optimization
+        ast_id* id = v->get_idlist()->get_item(0);
+        const char* type_string;
+        /*if(get_lib()->has_optimized_type_name(id->getSymInfo())) {
+            type_string = get_lib()->get_optimized_type_name(id->getSymInfo());
+        } else*/ {
+            type_string = get_type_string(t);
+        }
+        Body.push_spc(type_string);
+    } else {
+        Body.push_spc(get_type_string(t));
+    }
+
+    if (t->is_property()) {
+        ast_idlist* idl = v->get_idlist();
+        assert(idl->get_length() == 1);
+        generate_lhs_id(idl->get_item(0));
+        //declare_prop_def(t, idl->get_item(0));
+    } else if (t->is_collection()) {
+        ast_idlist* idl = v->get_idlist();
+        assert(idl->get_length() == 1);
+        generate_lhs_id(idl->get_item(0));
+        //get_lib()->add_collection_def(idl->get_item(0));
+    } else if (t->is_primitive()) {
+        generate_idlist_primitive(v->get_idlist());
+        Body.pushln(";");
+    } else {
+        generate_idlist(v->get_idlist());
+        Body.pushln(";");
+    }
 }
 
 void gm_cuda_gen::generate_sent_foreach(ast_foreach* i) {
@@ -1540,6 +1843,9 @@ void gm_cuda_gen::generate_sent_foreach(ast_foreach* i) {
         //Body.flush();
         *tempBody = Body;
         Body = cudaBody;
+        scope* newScope = new scope(i, currentProc);
+        newScope->setParentScope(getCurrentScope());
+        setCurrentScope(newScope);
         callStr = generate_newKernelFunction(i);
     }
 
@@ -1564,6 +1870,9 @@ void gm_cuda_gen::generate_sent_foreach(ast_foreach* i) {
         insideCudaKernel = false;
         Body = *tempBody;
         Body.push(callStr.c_str());
+        generateMacroDefine(getCurrentScope());
+        getCurrentScope()->printScopeVariables();
+        setCurrentScope(getCurrentScope()->getParentScope());
     }
 }
 
@@ -1591,7 +1900,6 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
     static int forLoopId = 0;
     char temp[1024];
     sprintf(temp, "%d", forLoopId);
-    forLoopId++;
     std::string str = "__global__ void forEachKernel" + std::string(temp) + std::string(" (");
     std::string callStr = "forEachKernel" + std::string(temp) + std::string("<<<");
     symbol* iterSym = transfer.findSymbol(f->get_iterator()->get_orgname());
@@ -1682,6 +1990,15 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
         }
     }
     Body.push(") {\n");
+    
+    // Generate Macro for declaration of local variables for the kernel
+    sprintf(temp, "%d", forLoopId);
+    str = "kernelMacro" + std::string(temp); 
+    forLoopId++;
+    currentScope->setMacroName(str);
+    str = str + ";";
+    Body.pushln(str.c_str());
+
     callStr.append(");\n");
     return callStr;
 }
@@ -1725,7 +2042,8 @@ void gm_cuda_gen::generate_sent_call(ast_call* c) {
     if (c->is_builtin_call())
         generate_expr_builtin(c->get_builtin());
     else {
-        generate_lhs_id(c->getCallName());
+        //generate_lhs_id(c->getCallName());
+        Body.push(c->getCallName()->get_orgname());
         Body.push("(");
         Body.push(")");
     }
@@ -1748,9 +2066,46 @@ void gm_cuda_gen::generate_sent_block_exit(ast_sentblock* b) {
 
 }*/
 
-/*void gm_cuda_gen::generate_idlist(ast_idlist* i) {
+void gm_cuda_gen::generate_idlist(ast_idlist* idl) {
 
-}*/
+    int z = idl->get_length();
+    for (int i = 0; i < z; i++) {
+        ast_id* id = idl->get_item(i);
+        generate_lhs_id(id);
+        if (i < z - 1) Body.push_spc(',');
+    }
+}
+
+void gm_cuda_gen::generate_idlist_primitive(ast_idlist* idList) {
+    int length = idList->get_length();
+    for (int i = 0; i < length; i++) {
+        ast_id* id = idList->get_item(i);
+        generate_lhs_id(id);
+        //generate_lhs_default(id->getTypeSummary());
+        if (i < length - 1) Body.push_spc(',');
+    }
+}
+
+void gm_cuda_gen::generate_lhs_default(int type) {
+    switch (type) {
+        case GMTYPE_BYTE:
+        case GMTYPE_SHORT:
+        case GMTYPE_INT:
+        case GMTYPE_LONG:
+            Body.push_spc(" = 0");
+            break;
+        case GMTYPE_FLOAT:
+        case GMTYPE_DOUBLE:
+            Body.push_spc(" = 0.0");
+            break;
+        case GMTYPE_BOOL:
+            Body.push_spc(" = false");
+            break;
+        default:
+            assert(false);
+            return;
+    }
+}
 
 void gm_cuda_gen::generate_proc(ast_procdef* proc) {
 
@@ -1759,10 +2114,20 @@ void gm_cuda_gen::generate_proc(ast_procdef* proc) {
     // Parallel Regions Analysis
     gm_cuda_par_regions PRA = transfer;
     currentProc = proc;
+    scope* newScope = new scope(currentProc);
+
+    std::string macroName = proc->get_procname()->get_orgname() + std::string("Macro");
+    newScope->setMacroName(macroName);
+    setGlobalScope(newScope);
+    setCurrentScope(newScope);
     generate_kernel_function(proc);
 
     generate_sent(proc->get_body());
 
+    generateMacroDefine(getCurrentScope());
+    getCurrentScope()->printScopeVariables();
+    setGlobalScope(NULL);
+    setCurrentScope(NULL);
 }
 
 // Generate the Kernel call definition
@@ -1812,6 +2177,9 @@ void gm_cuda_gen::generate_kernel_function(ast_procdef* proc) {
     Out.push(") {\n");
 
     Out.NL();
+
+    Out.push(getCurrentScope()->getMacroName().c_str());
+    Out.pushln(";");
 }
 
 /*

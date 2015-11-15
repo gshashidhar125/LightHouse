@@ -1,0 +1,17 @@
+Proc scope1(G: Graph) : Int
+{
+    Int x = 0;
+    Foreach (n: G.Nodes) {
+        Int y = 0;
+        Foreach (t: n.Nbrs) {
+            Int z3 = y;
+            Int z4 = x;
+            x = 1;
+            x = z3 + z4;
+        }
+        Int z1 = y;
+        Int z2 = x;
+        y = 2;
+        x = 2;
+    }
+}

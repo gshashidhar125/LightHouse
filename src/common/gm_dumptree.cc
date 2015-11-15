@@ -290,7 +290,7 @@ void ast_assign::dump_tree(int ind_level) {
 
 void ast_vardecl::dump_tree(int ind_level) {
     IND(ind_level);
-    assert(parent!=NULL);
+    //assert(parent!=NULL);
     printf("[DECL ");
     printf("\n");
     type->dump_tree(ind_level + 1);
