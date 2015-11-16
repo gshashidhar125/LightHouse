@@ -1,0 +1,1982 @@
+adamicAdar2.gm
+Initializationlib this = 0x28d5810
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+****Setting the for each loop to be sequential
+SymbolTable:
+    G, Type = Graph   
+    aa, Type = EP   
+    t0, Type = Node::I   -->G 
+        cnt, Type = NP   
+    to, Type = Node::I   -->G 
+    n, Type = Node::I   -->to -->G 
+    from, Type = Node::I   -->to -->G 
+        cnt, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.cnt
+Next ForEachLoop:
+    AST_ID:: to
+    AST_ID:: G
+    AST_ID:: n
+    AST_ID:: from
+    AST_FIELD:: from.cnt
+Inside Code Generation of CUDA
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+\n\n
+adamicAdar.gm
+Initializationlib this = 0x1be8810
+Do Print = 0
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+SymbolTable:
+    G, Type = Graph   
+    aa, Type = EP   
+    e, Type = Edge::I   -->G 
+        aa, Type = EP   
+    from, Type = Node   
+    to, Type = Node   
+    __S0, Type = Double   
+    n, Type = Node::I   -->from 
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: e
+    AST_ID:: G
+    AST_ID:: from
+    AST_ID:: to
+    AST_ID:: __S0
+    AST_ID:: n
+    AST_FIELD:: e.aa
+Inside Code Generation of CUDA
+Entered Line number 932
+
+Ended..
+
+\n\n
+avg_teen_cnt.gm
+Initializationlib this = 0x2b55810
+Do Print = 0
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+SymbolTable:
+    G, Type = Graph   
+    K, Type = Int   
+    __S2, Type = Int   
+    _cnt3, Type = Long   
+    n, Type = Node::I   -->G 
+        teen_cnt, Type = NP   
+        age, Type = NP   
+    __S1, Type = Int   
+    t, Type = Node::I   -->n -->G 
+        age, Type = NP   
+    _avg4, Type = Double   
+    avg, Type = Float   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: n
+    AST_ID:: G
+    AST_ID:: __S1
+    AST_ID:: t
+    AST_FIELD:: t.age
+    AST_FIELD:: n.teen_cnt
+    AST_FIELD:: n.age
+    AST_ID:: K
+    AST_ID:: __S2
+    AST_ID:: _cnt3
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n
+b2.gm
+Initializationlib this = 0x1a27810
+Do Print = 0
+SymbolTable:
+    G, Type = Graph   
+    s, Type = Node   
+    t, Type = Node::I   
+        A, Type = NP   
+        B, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Inside Code Generation of CUDA
+\n\n
+bc_adj.gm
+Initializationlib this = 0x27c3810
+warning: adding type conversion Int->Float
+warning: adding type conversion Int->Float
+warning: adding type conversion Int->Float
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+****Setting the for each loop to be sequential
+****Setting the for each loop to be sequential
+SymbolTable:
+    G, Type = Graph   
+    BC, Type = NP   
+    t0, Type = Node::I   -->G 
+        BC, Type = NP   
+    s, Type = Node::I   -->G 
+        sigma, Type = NP   
+    t1, Type = Node::I   -->G 
+        sigma, Type = NP   
+    v, Type = Node::I   
+        sigma, Type = NP   
+        delta, Type = NP   
+        BC, Type = NP   
+    __S3, Type = Float   
+    w, Type = Node::I   -->v 
+        sigma, Type = NP   
+    __S4, Type = Float   
+    w2, Type = Node::I   -->v 
+        sigma, Type = NP   
+        delta, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.BC
+Next ForEachLoop:
+    AST_ID:: s
+    AST_ID:: G
+    AST_ID:: t1
+    AST_FIELD:: t1.sigma
+    AST_FIELD:: s.sigma
+    AST_ID:: v
+    AST_ID:: __S3
+    AST_ID:: w
+    AST_FIELD:: w.sigma
+    AST_FIELD:: v.sigma
+    AST_ID:: __S4
+    AST_ID:: w2
+    AST_FIELD:: w2.sigma
+    AST_FIELD:: w2.delta
+    AST_FIELD:: v.delta
+    AST_FIELD:: v.BC
+Inside Code Generation of CUDA
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+\n\n
+bc.gm
+Initializationlib this = 0x2c3e810
+warning: adding type conversion Int->Float
+warning: adding type conversion Int->Float
+warning: adding type conversion Int->Float
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+****Setting the for each loop to be sequential
+****Setting the for each loop to be sequential
+SymbolTable:
+    G, Type = Graph   
+    BC, Type = NP   
+    Seeds, Type = Node_Sequence   
+    t0, Type = Node::I   -->G 
+        BC, Type = NP   
+    s, Type = Node::I   -->Seeds 
+        sigma, Type = NP   
+    t1, Type = Node::I   -->G 
+        sigma, Type = NP   
+    v, Type = Node::I   
+        sigma, Type = NP   
+        delta, Type = NP   
+        BC, Type = NP   
+    w, Type = Node::I   -->v 
+        sigma, Type = NP   
+    __S3, Type = Float   
+    w2, Type = Node::I   -->v 
+        sigma, Type = NP   
+        delta, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.BC
+Next ForEachLoop:
+    AST_ID:: s
+    AST_ID:: Seeds
+    AST_ID:: G
+    AST_ID:: t1
+    AST_FIELD:: t1.sigma
+    AST_FIELD:: s.sigma
+    AST_ID:: v
+    AST_ID:: w
+    AST_FIELD:: w.sigma
+    AST_FIELD:: v.sigma
+    AST_ID:: __S3
+    AST_ID:: w2
+    AST_FIELD:: w2.sigma
+    AST_FIELD:: w2.delta
+    AST_FIELD:: v.delta
+    AST_FIELD:: v.BC
+Inside Code Generation of CUDA
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+\n\n
+bc_random.gm
+Initializationlib this = 0x1376810
+warning: adding type conversion Int->Float
+warning: adding type conversion Int->Float
+warning: adding type conversion Int->Float
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+----Inside ForEachLoop
+----Inside ForEachLoop
+SymbolTable:
+    G, Type = Graph   
+    BC, Type = NP   
+    K, Type = Int   
+    k, Type = Int   
+    t0, Type = Node::I   -->G 
+        BC, Type = NP   
+    s, Type = Node   
+        sigma, Type = NP   
+    t1, Type = Node::I   -->G 
+        sigma, Type = NP   
+    v, Type = Node::I   
+        sigma, Type = NP   
+        delta, Type = NP   
+        BC, Type = NP   
+    w, Type = Node::I   -->v 
+        sigma, Type = NP   
+    __S3, Type = Float   
+    w2, Type = Node::I   -->v 
+        sigma, Type = NP   
+        delta, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.BC
+Next ForEachLoop:
+    AST_ID:: t1
+    AST_ID:: G
+    AST_FIELD:: t1.sigma
+Next ForEachLoop:
+    AST_ID:: w
+    AST_ID:: v
+    AST_FIELD:: w.sigma
+    AST_FIELD:: v.sigma
+Next ForEachLoop:
+    AST_ID:: w2
+    AST_ID:: v
+    AST_ID:: __S3
+    AST_FIELD:: v.sigma
+    AST_FIELD:: w2.sigma
+    AST_FIELD:: w2.delta
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 829
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 796
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n
+bidir_dijkstra.gm
+\n\n
+communities.gm
+\n\n
+conduct.gm
+Initializationlib this = 0x2876810
+warning: adding type conversion Int->Float
+warning: adding type conversion Int->Float
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+SymbolTable:
+    G, Type = Graph   
+    member, Type = NP   
+    num, Type = Int   
+    __S2, Type = Int   
+    __S3, Type = Int   
+    __S4, Type = Int   
+    u, Type = Node::I   -->G 
+        member, Type = NP   
+    u0, Type = Node::I   -->G 
+        member, Type = NP   
+    u1, Type = Node::I   -->G 
+        member, Type = NP   
+    j, Type = Node::I   -->u1 -->G 
+        member, Type = NP   
+    m, Type = Float   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: u
+    AST_ID:: G
+    AST_FIELD:: u.member
+    AST_ID:: num
+    AST_ID:: __S2
+Next ForEachLoop:
+    AST_ID:: u0
+    AST_ID:: G
+    AST_FIELD:: u0.member
+    AST_ID:: num
+    AST_ID:: __S3
+Next ForEachLoop:
+    AST_ID:: u1
+    AST_ID:: G
+    AST_FIELD:: u1.member
+    AST_ID:: num
+    AST_ID:: j
+    AST_FIELD:: j.member
+    AST_ID:: __S4
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n
+hop_dist.gm
+Initializationlib this = 0xebf810
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+----Inside ForEachLoop
+SymbolTable:
+    G, Type = Graph   
+    dist, Type = NP   
+    root, Type = Node   
+    fin, Type = Bool   
+    t0, Type = Node::I   -->G 
+        dist, Type = NP   
+        updated, Type = NP   
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+    __E8, Type = Bool   
+    n, Type = Node::I   -->G 
+        updated, Type = NP   
+        dist, Type = NP   
+    s, Type = Node::I   -->n -->G 
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+    t4, Type = Node::I   -->G 
+        dist, Type = NP   
+        dist_nxt, Type = NP   
+        updated, Type = NP   
+        updated_nxt, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.dist
+    AST_ID:: root
+    AST_FIELD:: t0.updated
+    AST_FIELD:: t0.dist_nxt
+    AST_FIELD:: t0.updated_nxt
+Next ForEachLoop:
+    AST_ID:: t4
+    AST_ID:: G
+    AST_FIELD:: t4.dist
+    AST_FIELD:: t4.dist_nxt
+    AST_FIELD:: t4.updated
+    AST_FIELD:: t4.updated_nxt
+    AST_ID:: __E8
+Next ForEachLoop:
+    AST_ID:: n
+    AST_ID:: G
+    AST_FIELD:: n.updated
+    AST_ID:: s
+    AST_FIELD:: s.dist_nxt
+    AST_FIELD:: s.updated_nxt
+    AST_FIELD:: n.dist
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n
+kosaraju.gm
+Initializationlib this = 0x148c810
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+----Inside ForEachLoop
+SymbolTable:
+    G, Type = Graph   
+    mem, Type = NP   
+    compId, Type = Int   
+    t0, Type = Node::I   -->G 
+        mem, Type = NP   
+        Checked, Type = NP   
+    t, Type = Node::I   -->G 
+        Checked, Type = NP   
+    n, Type = Node::I   
+        Checked, Type = NP   
+    Seq, Type = Node_Sequence   
+    t2, Type = Node::I   -->Seq 
+        mem, Type = NP   
+    n3, Type = Node::I   
+        mem, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.mem
+    AST_FIELD:: t0.Checked
+Next ForEachLoop:
+    AST_ID:: t
+    AST_ID:: G
+    AST_FIELD:: t.Checked
+    AST_ID:: n
+    AST_FIELD:: n.Checked
+    AST_ID:: Seq
+Next ForEachLoop:
+    AST_ID:: t2
+    AST_ID:: Seq
+    AST_FIELD:: t2.mem
+    AST_ID:: G
+    AST_ID:: n3
+    AST_FIELD:: n3.mem
+    AST_ID:: compId
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n
+pagerank.gm
+Initializationlib this = 0x1911810
+warning: adding type conversion Int->Double
+warning: adding type conversion Int->Double
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+SymbolTable:
+    G, Type = Graph   
+    max, Type = Int   
+    pg_rank, Type = NP   
+    cnt, Type = Int   
+    N, Type = Double   
+    t0, Type = Node::I   -->G 
+        pg_rank, Type = NP   
+    diff, Type = Double   
+    e, Type = Double   
+    t, Type = Node::I   -->G 
+        pg_rank, Type = NP   
+    __S1, Type = Double   
+    w, Type = Node::I   -->t -->G 
+        pg_rank, Type = NP   
+    val, Type = Double   
+    d, Type = Double   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.pg_rank
+    AST_ID:: N
+Next ForEachLoop:
+    AST_ID:: t
+    AST_ID:: G
+    AST_ID:: __S1
+    AST_ID:: w
+    AST_FIELD:: w.pg_rank
+    AST_ID:: val
+    AST_ID:: d
+    AST_ID:: N
+    AST_ID:: diff
+    AST_FIELD:: t.pg_rank
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 829
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n
+parallel_random_walk_jump_sampling.gm
+Initializationlib this = 0x208c810
+warning: adding type conversion Int->Float
+warning: adding type conversion Float->Long
+parallel_random_walk_jump_sampling.gm:In procedure parallel_random_walk_jump_sampling:
+parallel_random_walk_jump_sampling.gm:33: 19: warn: Property Selected may have read-write conflict: read at line:33, write at line:33
+parallel_random_walk_jump_sampling.gm:31: 29: warn: Property Token may have read-write conflict: read at line:31, write at line:44
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+----Inside ForEachLoop
+----Inside ForEachLoop
+SymbolTable:
+    G, Type = Graph   
+    num_tokens, Type = Int   
+    Selected, Type = NP   
+    count, Type = Long   
+    t0, Type = Node::I   -->G 
+        Token, Type = NP   
+        TokenNxt, Type = NP   
+        Selected, Type = NP   
+    S, Type = Node_Set   
+    n, Type = Node   
+    t3, Type = Node::I   -->S 
+        Token, Type = NP   
+    N, Type = Long   
+    p_size, Type = Float   
+    n6, Type = Node::I   -->G 
+        Token, Type = NP   
+        Selected, Type = NP   
+    p_jump, Type = Float   
+    m, Type = Node   
+        TokenNxt, Type = NP   
+    m7, Type = Node   
+        TokenNxt, Type = NP   
+    t4, Type = Node::I   -->G 
+        Token, Type = NP   
+        TokenNxt, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.Token
+    AST_FIELD:: t0.TokenNxt
+    AST_FIELD:: t0.Selected
+Next ForEachLoop:
+    AST_ID:: t3
+    AST_ID:: S
+    AST_FIELD:: t3.Token
+Next ForEachLoop:
+    AST_ID:: t4
+    AST_ID:: G
+    AST_FIELD:: t4.Token
+    AST_FIELD:: t4.TokenNxt
+Next ForEachLoop:
+    AST_ID:: n6
+    AST_ID:: G
+    AST_FIELD:: n6.Token
+    AST_FIELD:: n6.Selected
+    AST_ID:: count
+    AST_ID:: p_jump
+    AST_ID:: m
+    AST_FIELD:: m.TokenNxt
+    AST_ID:: m7
+    AST_FIELD:: m7.TokenNxt
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 829
+
+Ended..
+
+Entered Line number 829
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 829
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+\n\n
+potential_friends.gm
+Initializationlib this = 0x1dee810
+potential_friends.gm:In procedure potential_friends:
+potential_friends.gm:7: 25: warn: Property potFriend may have read-mutate conflict: read at line:7, mutate at line:7
+Do Print = 0
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+****Setting the for each loop to be sequential
+SymbolTable:
+    G, Type = Graph   
+    potFriend, Type = NP   
+    v, Type = Node::I   -->G 
+    u, Type = Node::I   -->v -->G 
+    w, Type = Node::I   -->u -->v -->G 
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: v
+    AST_ID:: G
+    AST_ID:: u
+    AST_ID:: w
+Inside Code Generation of CUDA
+Entered Line number 932
+
+Ended..
+
+\n\n
+random_bipartite_matching.gm
+Initializationlib this = 0x1566810
+random_bipartite_matching.gm:In procedure random_bipartite_matching:
+random_bipartite_matching.gm:20: 49: warn: Property Suitor may have write-write conflict: write at line:20, write at line:20
+random_bipartite_matching.gm:28: 17: warn: Property Suitor may have read-write conflict: read at line:28, write at line:30
+random_bipartite_matching.gm:36: 40: warn: Property Match may have read-write conflict: read at line:36, write at line:39
+random_bipartite_matching.gm:39: 35: warn: Property Match may have write-write conflict: write at line:39, write at line:40
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+----Inside ForEachLoop
+----Inside ForEachLoop
+SymbolTable:
+    G, Type = Graph   
+    isLeft, Type = NP   
+    Match, Type = NP   
+    count, Type = Int   
+    finished, Type = Bool   
+    t0, Type = Node::I   -->G 
+        Match, Type = NP   
+        Suitor, Type = NP   
+    n, Type = Node::I   -->G 
+        isLeft, Type = NP   
+        Match, Type = NP   
+    t, Type = Node::I   -->n -->G 
+        Match, Type = NP   
+        Suitor, Type = NP   
+    t2, Type = Node::I   -->G 
+        isLeft, Type = NP   
+        Match, Type = NP   
+        Suitor, Type = NP   
+    n3, Type = Node   
+        Suitor, Type = NP   
+    n4, Type = Node::I   -->G 
+        isLeft, Type = NP   
+        Match, Type = NP   
+        Suitor, Type = NP   
+    t5, Type = Node   
+        Match, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.Match
+    AST_FIELD:: t0.Suitor
+Next ForEachLoop:
+    AST_ID:: n
+    AST_ID:: G
+    AST_FIELD:: n.isLeft
+    AST_FIELD:: n.Match
+    AST_ID:: t
+    AST_FIELD:: t.Match
+    AST_FIELD:: t.Suitor
+    AST_ID:: finished
+Next ForEachLoop:
+    AST_ID:: t2
+    AST_ID:: G
+    AST_FIELD:: t2.isLeft
+    AST_FIELD:: t2.Match
+    AST_FIELD:: t2.Suitor
+    AST_ID:: n3
+    AST_FIELD:: n3.Suitor
+Next ForEachLoop:
+    AST_ID:: n4
+    AST_ID:: G
+    AST_FIELD:: n4.isLeft
+    AST_FIELD:: n4.Match
+    AST_FIELD:: n4.Suitor
+    AST_ID:: t5
+    AST_FIELD:: t5.Match
+    AST_ID:: count
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n
+random_degree_node_sampling.gm
+Initializationlib this = 0x1b55810
+warning: adding type conversion Int->Double
+warning: adding type conversion Int->Double
+random_degree_node_sampling.gm:In procedure random_degree_node_sampling:
+random_degree_node_sampling.gm:9: 26: warn: Property S may have read-mutate conflict: read at line:9, mutate at line:9
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+SymbolTable:
+    G, Type = Graph   
+    N, Type = Int   
+    S, Type = Node_Set   
+    __S1, Type = Int   
+    n, Type = Node::I   -->G 
+    t0, Type = Node::I   -->G 
+        prob, Type = NP   
+    dice, Type = Double   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.prob
+    AST_ID:: __S1
+    AST_ID:: N
+    AST_ID:: dice
+    AST_ID:: S
+Next ForEachLoop:
+    AST_ID:: n
+    AST_ID:: G
+    AST_ID:: __S1
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+\n\n
+random_node_sampling.gm
+Initializationlib this = 0x25f7810
+random_node_sampling.gm:In procedure random_node_sampling:
+random_node_sampling.gm:7: 19: warn: Property S may have read-mutate conflict: read at line:7, mutate at line:7
+Do Print = 0
+----Inside ForEachLoop
+SymbolTable:
+    G, Type = Graph   
+    N, Type = Int   
+    S, Type = Node_Set   
+    prob, Type = Double   
+    v, Type = Node::I   -->G 
+    dice, Type = Double   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: v
+    AST_ID:: G
+    AST_ID:: dice
+    AST_ID:: prob
+    AST_ID:: S
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+\n\n
+random_walk_sampling_with_random_jump.gm
+Initializationlib this = 0x139a810
+Do Print = 0
+SymbolTable:
+    G, Type = Graph   
+    N, Type = Int   
+    c, Type = Double   
+    S, Type = Node_Set   
+    n, Type = Node   
+    count, Type = Int   
+End Symbol Table
+Variables list
+---------------
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 829
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 829
+
+Ended..
+
+Entered Line number 829
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 829
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 829
+
+Ended..
+
+\n\n
+sssp_dijkstra.gm
+\n\n
+sssp.gm
+Initializationlib this = 0x2196810
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+----Inside ForEachLoop
+SymbolTable:
+    G, Type = Graph   
+    dist, Type = NP   
+    len, Type = EP   
+    root, Type = Node   
+    fin, Type = Bool   
+    t0, Type = Node::I   -->G 
+        dist, Type = NP   
+        updated, Type = NP   
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+    __E8, Type = Bool   
+    n, Type = Node::I   -->G 
+        updated, Type = NP   
+        dist, Type = NP   
+    s, Type = Node::I   -->n -->G 
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+    e, Type = Edge   
+        len, Type = EP   
+    t4, Type = Node::I   -->G 
+        dist, Type = NP   
+        dist_nxt, Type = NP   
+        updated, Type = NP   
+        updated_nxt, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.dist
+    AST_ID:: root
+    AST_FIELD:: t0.updated
+    AST_FIELD:: t0.dist_nxt
+    AST_FIELD:: t0.updated_nxt
+Next ForEachLoop:
+    AST_ID:: t4
+    AST_ID:: G
+    AST_FIELD:: t4.dist
+    AST_FIELD:: t4.dist_nxt
+    AST_FIELD:: t4.updated
+    AST_FIELD:: t4.updated_nxt
+    AST_ID:: __E8
+Next ForEachLoop:
+    AST_ID:: n
+    AST_ID:: G
+    AST_FIELD:: n.updated
+    AST_ID:: s
+    AST_ID:: e
+    AST_FIELD:: s.dist_nxt
+    AST_FIELD:: s.updated_nxt
+    AST_FIELD:: n.dist
+    AST_FIELD:: e.len
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n
+sssp_path_adj.gm
+Initializationlib this = 0x1ece810
+warning: adding type conversion Int->Double
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+----Inside ForEachLoop
+SymbolTable:
+    G, Type = Graph   
+    dist, Type = NP   
+    edge_cost, Type = EP   
+    root, Type = Node   
+    end, Type = Node   
+        dist, Type = NP   
+    prev_node, Type = NP   
+    prev_edge, Type = NP   
+    fin, Type = Bool   
+    t0, Type = Node::I   -->G 
+        dist, Type = NP   
+        updated, Type = NP   
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+        prev_node, Type = NP   
+        prev_edge, Type = NP   
+    __E10, Type = Bool   
+    n, Type = Node::I   -->G 
+        updated, Type = NP   
+        dist, Type = NP   
+    s, Type = Node::I   -->n -->G 
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+        prev_node, Type = NP   
+        prev_edge, Type = NP   
+    e, Type = Edge   
+        edge_cost, Type = EP   
+    t6, Type = Node::I   -->G 
+        dist, Type = NP   
+        dist_nxt, Type = NP   
+        updated, Type = NP   
+        updated_nxt, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: n
+    AST_ID:: G
+    AST_FIELD:: n.updated
+    AST_FIELD:: n.dist
+    AST_FIELD:: end.dist
+    AST_ID:: s
+    AST_ID:: e
+    AST_FIELD:: e.edge_cost
+    AST_FIELD:: s.dist_nxt
+    AST_FIELD:: s.updated_nxt
+    AST_FIELD:: s.prev_node
+    AST_FIELD:: s.prev_edge
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.dist
+    AST_ID:: root
+    AST_FIELD:: t0.updated
+    AST_FIELD:: t0.dist_nxt
+    AST_FIELD:: t0.updated_nxt
+    AST_FIELD:: t0.prev_node
+    AST_FIELD:: t0.prev_edge
+Next ForEachLoop:
+    AST_ID:: t6
+    AST_ID:: G
+    AST_FIELD:: t6.dist
+    AST_FIELD:: t6.dist_nxt
+    AST_FIELD:: t6.updated
+    AST_FIELD:: t6.updated_nxt
+    AST_ID:: __E10
+Do Print = 0
+SymbolTable:
+    G, Type = Graph   
+    dist, Type = NP   
+    edge_cost, Type = EP   
+    root, Type = Node   
+    end, Type = Node   
+        dist, Type = NP   
+        prev_node, Type = NP   
+    prev_node, Type = NP   
+    prev_edge, Type = NP   
+    fin, Type = Bool   
+    t0, Type = Node::I   -->G 
+        dist, Type = NP   
+        updated, Type = NP   
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+        prev_node, Type = NP   
+        prev_edge, Type = NP   
+    __E10, Type = Bool   
+    n, Type = Node::I   -->G 
+        updated, Type = NP   
+        dist, Type = NP   
+        prev_edge, Type = NP   
+        prev_node, Type = NP   
+    s, Type = Node::I   -->n -->G 
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+        prev_node, Type = NP   
+        prev_edge, Type = NP   
+    e, Type = Edge   
+        edge_cost, Type = EP   
+    t6, Type = Node::I   -->G 
+        dist, Type = NP   
+        dist_nxt, Type = NP   
+        updated, Type = NP   
+        updated_nxt, Type = NP   
+    Q, Type = Node_Sequence   
+    total_cost, Type = Double   
+    begin, Type = Node   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: n
+    AST_ID:: G
+    AST_FIELD:: n.updated
+    AST_FIELD:: n.dist
+    AST_FIELD:: end.dist
+    AST_ID:: s
+    AST_ID:: e
+    AST_FIELD:: e.edge_cost
+    AST_FIELD:: s.dist_nxt
+    AST_FIELD:: s.updated_nxt
+    AST_FIELD:: s.prev_node
+    AST_FIELD:: s.prev_edge
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.dist
+    AST_ID:: root
+    AST_FIELD:: t0.updated
+    AST_FIELD:: t0.dist_nxt
+    AST_FIELD:: t0.updated_nxt
+    AST_FIELD:: t0.prev_node
+    AST_FIELD:: t0.prev_edge
+Next ForEachLoop:
+    AST_ID:: t6
+    AST_ID:: G
+    AST_FIELD:: t6.dist
+    AST_FIELD:: t6.dist_nxt
+    AST_FIELD:: t6.updated
+    AST_FIELD:: t6.updated_nxt
+    AST_ID:: __E10
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 815
+
+Ended..
+
+Entered Line number 853
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 815
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 815
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 815
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n
+sssp_path.gm
+Initializationlib this = 0x124c810
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+----Inside ForEachLoop
+SymbolTable:
+    G, Type = Graph   
+    dist, Type = NP   
+    len, Type = EP   
+    root, Type = Node   
+    prev, Type = NP   
+    fin, Type = Bool   
+    t0, Type = Node::I   -->G 
+        dist, Type = NP   
+        updated, Type = NP   
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+        prev, Type = NP   
+    __E9, Type = Bool   
+    n, Type = Node::I   -->G 
+        updated, Type = NP   
+        dist, Type = NP   
+    s, Type = Node::I   -->n -->G 
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+        prev, Type = NP   
+    e, Type = Edge   
+        len, Type = EP   
+    t5, Type = Node::I   -->G 
+        dist, Type = NP   
+        dist_nxt, Type = NP   
+        updated, Type = NP   
+        updated_nxt, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.dist
+    AST_ID:: root
+    AST_FIELD:: t0.updated
+    AST_FIELD:: t0.dist_nxt
+    AST_FIELD:: t0.updated_nxt
+    AST_FIELD:: t0.prev
+Next ForEachLoop:
+    AST_ID:: n
+    AST_ID:: G
+    AST_FIELD:: n.updated
+    AST_ID:: s
+    AST_ID:: e
+    AST_FIELD:: s.dist_nxt
+    AST_FIELD:: s.updated_nxt
+    AST_FIELD:: s.prev
+    AST_FIELD:: n.dist
+    AST_FIELD:: e.len
+Next ForEachLoop:
+    AST_ID:: t5
+    AST_ID:: G
+    AST_FIELD:: t5.dist
+    AST_FIELD:: t5.dist_nxt
+    AST_FIELD:: t5.updated
+    AST_FIELD:: t5.updated_nxt
+    AST_ID:: __E9
+Do Print = 0
+SymbolTable:
+    G, Type = Graph   
+    dist, Type = NP   
+    len, Type = EP   
+    root, Type = Node   
+    prev, Type = NP   
+    fin, Type = Bool   
+    t0, Type = Node::I   -->G 
+        dist, Type = NP   
+        updated, Type = NP   
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+        prev, Type = NP   
+    __E9, Type = Bool   
+    n, Type = Node::I   -->G 
+        updated, Type = NP   
+        dist, Type = NP   
+    s, Type = Node::I   -->n -->G 
+        dist_nxt, Type = NP   
+        updated_nxt, Type = NP   
+        prev, Type = NP   
+    e, Type = Edge   
+        len, Type = EP   
+    t5, Type = Node::I   -->G 
+        dist, Type = NP   
+        dist_nxt, Type = NP   
+        updated, Type = NP   
+        updated_nxt, Type = NP   
+    Q, Type = Node_Sequence   
+    t, Type = Node   
+        prev, Type = NP   
+    end, Type = Node   
+        prev, Type = NP   
+    begin, Type = Node   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.dist
+    AST_ID:: root
+    AST_FIELD:: t0.updated
+    AST_FIELD:: t0.dist_nxt
+    AST_FIELD:: t0.updated_nxt
+    AST_FIELD:: t0.prev
+Next ForEachLoop:
+    AST_ID:: n
+    AST_ID:: G
+    AST_FIELD:: n.updated
+    AST_ID:: s
+    AST_ID:: e
+    AST_FIELD:: s.dist_nxt
+    AST_FIELD:: s.updated_nxt
+    AST_FIELD:: s.prev
+    AST_FIELD:: n.dist
+    AST_FIELD:: e.len
+Next ForEachLoop:
+    AST_ID:: t5
+    AST_ID:: G
+    AST_FIELD:: t5.dist
+    AST_FIELD:: t5.dist_nxt
+    AST_FIELD:: t5.updated
+    AST_FIELD:: t5.updated_nxt
+    AST_ID:: __E9
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 815
+
+Ended..
+
+Entered Line number 853
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 815
+
+Ended..
+
+\n\n
+tarjan_scc.gm
+Initializationlib this = 0x1608810
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+SymbolTable:
+    G, Type = Graph   
+    SCC, Type = NP   
+    t0, Type = Node::I   -->G 
+        SCC, Type = NP   
+        InStack, Type = NP   
+    n, Type = Node::I   -->G 
+        SCC, Type = NP   
+    t, Type = Node::I   
+        InStack, Type = NP   
+        LowLink, Type = NP   
+    Stack, Type = Node_Sequence   
+    k, Type = Node::I   -->t 
+        LowLink, Type = NP   
+    w, Type = Node   
+        InStack, Type = NP   
+        SCC, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.SCC
+    AST_FIELD:: t0.InStack
+Next ForEachLoop:
+    AST_ID:: n
+    AST_ID:: G
+    AST_FIELD:: n.SCC
+    AST_ID:: t
+    AST_FIELD:: t.InStack
+    AST_ID:: Stack
+    AST_FIELD:: t.LowLink
+    AST_ID:: k
+    AST_FIELD:: k.LowLink
+    AST_ID:: w
+    AST_FIELD:: w.InStack
+    AST_FIELD:: w.SCC
+Inside Code Generation of CUDA
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+\n\n
+triangle_counting_directed.gm
+Initializationlib this = 0x1783810
+Do Print = 0
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+****Setting the for each loop to be sequential
+SymbolTable:
+    G, Type = Graph   
+    T, Type = Long   
+    v, Type = Node::I   -->G 
+    u, Type = Node::I   -->v -->G 
+    w, Type = Node::I   -->v -->G 
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: v
+    AST_ID:: G
+    AST_ID:: u
+    AST_ID:: w
+    AST_ID:: T
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n
+triangle_counting.gm
+Initializationlib this = 0x253e810
+Do Print = 0
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+****Setting the for each loop to be sequential
+SymbolTable:
+    G, Type = Graph   
+    v, Type = Node::I   -->G 
+    u, Type = Node::I   -->v -->G 
+    w, Type = Node::I   -->v -->G 
+    T, Type = Long   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: v
+    AST_ID:: G
+    AST_ID:: u
+    AST_ID:: w
+    AST_ID:: T
+Inside Code Generation of CUDA
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n
+v_cover.gm
+Initializationlib this = 0xec9810
+Do Print = 0
+----Inside ForEachLoop
+----Inside ForEachLoop
+----Inside ForEachLoop
+****Setting the for each loop to be sequential
+----Inside ForEachLoop
+SymbolTable:
+    G, Type = Graph   
+    select, Type = EP   
+    remain, Type = Int   
+    __S4, Type = Int   
+    t0, Type = Node::I   -->G 
+        Deg, Type = NP   
+        Covered, Type = NP   
+    t2, Type = Edge::I   -->G 
+        select, Type = EP   
+    max_val, Type = Int   
+    s, Type = Node::I   -->G 
+        Covered, Type = NP   
+        Deg, Type = NP   
+    t, Type = Node::I   -->s -->G 
+        Covered, Type = NP   
+        Deg, Type = NP   
+    from, Type = Node   
+        Covered, Type = NP   
+        Deg, Type = NP   
+    to, Type = Node   
+        Covered, Type = NP   
+        Deg, Type = NP   
+    e, Type = Edge   
+        select, Type = EP   
+    t3, Type = Node::I   -->G 
+        Covered, Type = NP   
+End Symbol Table
+Variables list
+---------------
+Next ForEachLoop:
+    AST_ID:: t0
+    AST_ID:: G
+    AST_FIELD:: t0.Deg
+    AST_FIELD:: t0.Covered
+Next ForEachLoop:
+    AST_ID:: t2
+    AST_ID:: G
+    AST_FIELD:: t2.select
+Next ForEachLoop:
+    AST_ID:: s
+    AST_ID:: G
+    AST_ID:: t
+    AST_FIELD:: s.Covered
+    AST_FIELD:: t.Covered
+    AST_ID:: max_val
+    AST_ID:: from
+    AST_ID:: to
+    AST_ID:: e
+    AST_FIELD:: s.Deg
+    AST_FIELD:: t.Deg
+Next ForEachLoop:
+    AST_ID:: t3
+    AST_ID:: G
+    AST_FIELD:: t3.Covered
+    AST_ID:: __S4
+Inside Code Generation of CUDA
+Entered Line number 786
+
+Ended..
+
+Entered Line number 829
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 796
+
+Ended..
+
+Entered Line number 796
+
+Ended..
+
+Entered Line number 796
+
+Ended..
+
+Entered Line number 796
+
+Ended..
+
+Entered Line number 796
+
+Ended..
+
+Entered Line number 786
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+Entered Line number 932
+
+Ended..
+
+Entered Line number 807
+
+Ended..
+
+\n\n

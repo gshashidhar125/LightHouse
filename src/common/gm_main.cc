@@ -242,8 +242,8 @@ int main(int argc, char** argv) {
     }
     gm_end_major_compiler_stage();
     
-    if (OPTIONS.get_arg_bool(GMARGFLAG_DUMP_TREE))
-        FE.dump_tree();
+    /*if (OPTIONS.get_arg_bool(GMARGFLAG_DUMP_TREE))
+        FE.dump_tree();*/
 
     //----------------------------------------------------------------
     // Backend-Independnet Optimization
