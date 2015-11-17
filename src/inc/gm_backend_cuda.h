@@ -94,6 +94,7 @@ public:
     //virtual ast_typedecl* getNewTypeDecl(int typeId);
     virtual void generateMacroDefine(scope* s);
     void markGPUAndCPUGlobal();
+    bool isOnGPUMemory(ast_id* i);
 
 /*    virtual void generate_expr_list(std::list<ast_expr*>& L);
     virtual void generate_expr(ast_expr* e);

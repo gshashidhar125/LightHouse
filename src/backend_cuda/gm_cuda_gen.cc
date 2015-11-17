@@ -136,13 +136,6 @@ enum memory {
     GPUMemory,
 };
 
-enum SCOPE_T {
-    THREAD_LOCAL,
-    //SHARED_MEMORY,
-    GLOBAL_GPU_MEMORY,
-    CPU_MEMORY,
-};
-
 class symbol {
 
 public:
@@ -448,7 +441,48 @@ ast_typedecl* getNewTypeDecl(int typeId) {
     return NULL;
 }
 
-typedef std::pair<ast_vardecl*, SCOPE_T>scope_entry;
+enum SCOPE_T {
+    THREAD_LOCAL,
+    //SHARED_MEMORY,
+    GLOBAL_GPU_MEMORY,
+    CPU_MEMORY,
+    NO_SCOPE,
+};
+
+//typedef std::pair<ast_vardecl*, SCOPE_T>scope_entry;
+class scope_entry {
+
+public:
+    scope_entry(ast_id* i, SCOPE_T s, ast_typedecl* t) : 
+        id(i), memLoc(s), type(t) {}
+
+    ast_id* getId() { return id; }
+    const char* getName()   { return id->get_orgname(); }
+    SCOPE_T getMemLoc() { return memLoc;    }
+    void setMemLoc(SCOPE_T m) { 
+        if (m == THREAD_LOCAL) {
+            if (memLoc == GLOBAL_GPU_MEMORY)
+                return;
+            else if (memLoc == CPU_MEMORY) {
+                memLoc = GLOBAL_GPU_MEMORY;
+                return;
+            }
+        } else if (m == CPU_MEMORY) {
+            if (memLoc == THREAD_LOCAL || memLoc == GLOBAL_GPU_MEMORY) {
+                memLoc = GLOBAL_GPU_MEMORY;
+                return;
+            }
+        }
+        memLoc = m; 
+    }
+    int getType()   {   return type->get_typeid();  }
+    ast_typedecl* getTypeDecl() { return type;  }
+protected:
+    ast_id* id;
+    SCOPE_T memLoc;
+    ast_typedecl* type;
+};
+
 class scope {
 
 public:
@@ -462,8 +496,12 @@ public:
         parent = p;
     }
 
-    std::list<scope_entry> getScopeEntries() {
+    std::list<scope_entry*> getScopeEntries() {
         return variables;
+    }
+
+    std::list<ast_vardecl*> getVarDecls() {
+        return varDecls;
     }
 
     scope* getParentScope() {  return parent;  }
@@ -479,13 +517,52 @@ public:
     }
 
     void addVariableToScope(ast_id* varId, int typeId) {
-        std::list<scope_entry>::iterator varDeclIt = variables.begin();
-        ast_idlist* correctListToAdd = NULL;
-        SCOPE_T currentScope;
+        std::list<scope_entry*>::iterator varDeclIt = variables.begin();
+        bool insideCudaKernel = false;
+        ast_typedecl* varType = getNewTypeDecl(typeId);
         if (parent == NULL)
-            currentScope = CPU_MEMORY;
+            insideCudaKernel = false;
         else
-            currentScope = THREAD_LOCAL;
+            insideCudaKernel = true;
+
+        for (; varDeclIt != variables.end(); varDeclIt++) {
+            scope_entry* var = *varDeclIt;
+            if (!strcmp(varId->get_orgname(), var->getName())) {
+                if (var->getType() != typeId) {
+                    // Type mismatch
+                    assert(false);
+                }
+                if (insideCudaKernel) {
+                    var->setMemLoc(THREAD_LOCAL);
+                } else {
+                    var->setMemLoc(CPU_MEMORY);
+                }
+                return;
+            }
+        }
+
+        if (parent != NULL) {
+            varDeclIt = parent->variables.begin();
+            for (; varDeclIt != parent->variables.end(); varDeclIt++) {
+                scope_entry* var = *varDeclIt;
+                if (!strcmp(varId->get_orgname(), var->getName())) {
+                    if (var->getType() != typeId) {
+                        // Type mismatch
+                        assert(false);
+                    }
+                    var->setMemLoc(GLOBAL_GPU_MEMORY);
+                    return;
+                }
+            }
+        }
+        scope_entry* newVar;
+        if (insideCudaKernel)
+            newVar = new scope_entry(varId, THREAD_LOCAL, varType);
+        else
+            newVar = new scope_entry(varId, CPU_MEMORY, varType);
+        variables.push_back(newVar);
+
+        /*ast_idlist* correctListToAdd = NULL;
         for (; varDeclIt != variables.end(); varDeclIt++) {
             ast_vardecl* vars = (*varDeclIt).first;
             ast_idlist* varList = vars->get_idlist();
@@ -498,8 +575,8 @@ public:
                     // The same variable is declared as different type
                     assert(false);
                 }
-            } else if (vars->get_type()->get_typeid() == typeId /*&&
-                       (*varDeclIt).second == currentScope*/) {
+            } else if (vars->get_type()->get_typeid() == typeId) { //&&
+                //       (*varDeclIt).second == currentScope
                 //assert(correctListToAdd == NULL);
                 correctListToAdd = varList;
             }
@@ -521,10 +598,10 @@ public:
                         // The same variable is declared as different type
                         assert(false);
                     }
-                }/* else if (vars->get_type()->get_typeid() == typeId) {
-                    assert(correctListToAdd == NULL);
-                    correctListToAdd = varList;
-                }*/
+                }// else if (vars->get_type()->get_typeid() == typeId) {
+                 //   assert(correctListToAdd == NULL);
+                 //   correctListToAdd = varList;
+                //}
             }
         }
         if (correctListToAdd == NULL) {
@@ -536,20 +613,48 @@ public:
             return;
         }
             
+        correctListToAdd->add_id(varId);*/
+    }
+
+    void addVariableDeclaration(ast_id* varId, ast_typedecl* varType) {
+        
+        ast_idlist* correctListToAdd = NULL;
+        std::list<ast_vardecl*>::iterator varDeclIt = varDecls.begin();
+        for (; varDeclIt != varDecls.end(); varDeclIt++) {
+            ast_idlist* varList = (*varDeclIt)->get_idlist();
+            if (varList->contains(varId->get_orgname()) == true) {
+                if ((*varDeclIt)->get_type()->get_typeid() == varType->get_typeid()) {
+                    // Already the variable is inserted in the
+                    // declarations
+                    return;
+                } else {
+                    // The same variable is declared as different type
+                    assert(false);
+                }
+            } else if ((*varDeclIt)->get_type()->get_typeid() == varType->get_typeid()) { //&&
+                //       (*varDeclIt).second == currentScope
+                //assert(correctListToAdd == NULL);
+                correctListToAdd = varList;
+            }
+        }
+        if (correctListToAdd == NULL) {
+            ast_vardecl* newVarDecl = ast_vardecl::new_vardecl(varType, varId);
+
+            varDecls.push_back(newVarDecl);
+            return;
+        }
+            
         correctListToAdd->add_id(varId);
     }
 
     void printScopeVariables() {
 
-        std::list<scope_entry>::iterator varDeclIt = variables.begin();
+        std::list<scope_entry*>::iterator varDeclIt = variables.begin();
         for (; varDeclIt != variables.end(); varDeclIt++) {
-            ast_vardecl* vars = (*varDeclIt).first;
-            ast_idlist* varList = vars->get_idlist();
+            ast_typedecl* varType = (*varDeclIt)->getTypeDecl();
             printf("Type = ");
-            vars->get_type()->dump_tree(2);
-            printf("\nVariables = \n");
-            varList->dump_tree(2);
-            printf("\n");
+            varType->dump_tree(2);
+            printf("\nVariables = %s, scope = %d\n", (*varDeclIt)->getName(), (*varDeclIt)->getMemLoc());
         }
     }
 
@@ -558,14 +663,74 @@ protected:
     ast_procdef* enclosingProc;
     scope* parent;
     std::string name;
-    std::list<scope_entry> variables;
+    std::list<scope_entry*> variables;
+    std::list<ast_vardecl*> varDecls;
     bool forEachScope;
 
 };
 
+bool gm_cuda_gen::isOnGPUMemory(ast_id* i) {
+    
+    std::list<scope_entry*> entries = currentScope->getScopeEntries();
+    std::list<scope_entry*>::iterator varDeclIt = entries.begin();
+    for (; varDeclIt != entries.end(); varDeclIt++) {
+        scope_entry* var = *varDeclIt;
+        if (!strcmp(i->get_orgname(), var->getName()))
+            if (var->getMemLoc() == GLOBAL_GPU_MEMORY)
+                return true;
+    }
+    entries = globalScope->getScopeEntries();
+    varDeclIt = entries.begin();
+    for (; varDeclIt != entries.end(); varDeclIt++) {
+        scope_entry* var = *varDeclIt;
+        if (!strcmp(i->get_orgname(), var->getName()))
+            if (var->getMemLoc() == GLOBAL_GPU_MEMORY)
+                return true;
+    }
+    entries = GPUMemoryScope->getScopeEntries();
+    varDeclIt = entries.begin();
+    for (; varDeclIt != entries.end(); varDeclIt++) {
+        scope_entry* var = *varDeclIt;
+        if (!strcmp(i->get_orgname(), var->getName()))
+            if (var->getMemLoc() == GLOBAL_GPU_MEMORY)
+                return true;
+    }
+    return false;
+}
+
 void gm_cuda_gen::markGPUAndCPUGlobal() {
 
-    
+    // Add variables to global scope declaration
+    std::list<scope_entry*> varList = GPUMemoryScope->getScopeEntries();
+    std::list<scope_entry*>::iterator varListIt = varList.begin();
+    for (; varListIt != varList.end(); varListIt++) {
+        ast_id* varId = (*varListIt)->getId();
+        ast_typedecl* varType = (*varListIt)->getTypeDecl();
+        GPUMemoryScope->addVariableDeclaration(varId, varType);
+    }
+    varList = globalScope->getScopeEntries();
+    varListIt = varList.begin();
+    for (; varListIt != varList.end(); varListIt++) {
+        ast_id* varId = (*varListIt)->getId();
+        ast_typedecl* varType = (*varListIt)->getTypeDecl();
+        if ((*varListIt)->getMemLoc() == GLOBAL_GPU_MEMORY)
+            GPUMemoryScope->addVariableDeclaration(varId, varType);
+        else
+            globalScope->addVariableDeclaration(varId, varType);
+    }
+    if (currentScope == globalScope)
+        return;
+
+    varList = currentScope->getScopeEntries();
+    varListIt = varList.begin();
+    for (; varListIt != varList.end(); varListIt++) {
+        ast_id* varId = (*varListIt)->getId();
+        ast_typedecl* varType = (*varListIt)->getTypeDecl();
+        if ((*varListIt)->getMemLoc() == GLOBAL_GPU_MEMORY)
+            GPUMemoryScope->addVariableDeclaration(varId, varType);
+        else
+            globalScope->addVariableDeclaration(varId, varType);
+    }
 }
 
 bool isSameFieldNames(ast_field* f1, ast_field* f2) {
@@ -1180,8 +1345,11 @@ void gm_cuda_gen::generate_lhs_id(ast_id* i) {
     if(doPrint)
     i->dump_tree(2);
     printf("\nEnded..\n\n");
-    Body.push(i->get_orgname());
     currentScope->addVariableToScope(i);
+    if (isOnGPUMemory(i)) {
+        Body.push("d_");
+    }
+    Body.push(i->get_orgname());
 }
 
 void gm_cuda_gen::generate_lhs_field(ast_field* i) {
@@ -1563,16 +1731,17 @@ void gm_cuda_gen::generateMacroDefine(scope* s) {
     *tempBody = Body;
     Header.flush();
     Body = Header;
-    std::list<scope_entry>varDecls = s->getScopeEntries();
-    std::list<scope_entry>::iterator varDeclIt = varDecls.begin();
+    std::list<ast_vardecl*>varDecls = s->getVarDecls();
+    std::list<ast_vardecl*>::iterator varDeclIt = varDecls.begin();
     Body.push("#define ");
     Body.push(s->getMacroName().c_str());
     Body.pushln(" \\");
     //Body.push("{");
     printingMacro = true;
     for (; varDeclIt != varDecls.end(); varDeclIt++) {
-        ast_vardecl* vars = (*varDeclIt).first;
-        generate_sent(vars);
+        if (s == GPUMemoryScope)
+            Body.push("__device__ ");
+        generate_sent_vardecl(*varDeclIt);
     }
     printingMacro = false;
     Body.pushln(" ");
@@ -1683,8 +1852,10 @@ void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
         ast_expr* ifCond = ast_expr::new_biop_expr(GMOP_EQ, condLeft, condRight);
 
         ast_id* chooseThreadVar = ast_id::new_id("chooseThread", 0, 1);
-        globalScope->addVariableToScope(chooseThreadVar, GMTYPE_INT);
-        ast_expr* threadId = ast_expr::new_id_expr(ast_id::new_id("threadIdx.x", 0, 1));
+        //symbol* newSymbol = transfer.addToSymTableAndReturn(chooseThreadVar);
+        //newSymbol->setMemLoc(GPUMemory);
+        GPUMemoryScope->addVariableToScope(chooseThreadVar, GMTYPE_INT);
+        ast_expr* threadId = ast_expr::new_id_expr(ast_id::new_id("tId", 0, 1));
         ast_sent* chooseThreadAssign = ast_assign::new_assign_scala(chooseThreadVar, threadId);
         ast_sent* newIf = ast_if::new_if(ifCond, chooseThreadAssign, NULL);
         newStmts->add_sent(newIf);
@@ -1867,6 +2038,18 @@ void gm_cuda_gen::generate_sent_foreach(ast_foreach* i) {
         insideCudaKernel = false;
         Body = *tempBody;
         Body.push(callStr.c_str());
+
+        std::list<scope_entry*>varList = currentScope->getScopeEntries();
+        std::list<scope_entry*>::iterator varListIt = varList.begin();
+        for (; varListIt != varList.end(); varListIt++) {
+            ast_id* varId = (*varListIt)->getId();
+            ast_typedecl* varType = (*varListIt)->getTypeDecl();
+            if ((*varListIt)->getMemLoc() == GLOBAL_GPU_MEMORY)
+                GPUMemoryScope->addVariableDeclaration(varId, varType);
+            else
+                currentScope->addVariableDeclaration(varId, varType);
+        }
+
         generateMacroDefine(getCurrentScope());
         getCurrentScope()->printScopeVariables();
         setCurrentScope(getCurrentScope()->getParentScope());
@@ -2119,11 +2302,14 @@ void gm_cuda_gen::generate_proc(ast_procdef* proc) {
     setGlobalScope(newScope);
     setCurrentScope(newScope);
     
+    macroName = proc->get_procname()->get_orgname() + std::string("MacroGPU");
     newScope = new scope(currentProc);
+    newScope->setMacroName(macroName);
     setGPUScope(newScope);
     
-    Body.push(getCurrentScope()->getMacroName().c_str());
-    Body.pushln(";");
+    cudaBody.push(getGPUScope()->getMacroName().c_str());
+    cudaBody.pushln(";");
+    cudaBody.flush();
     
     generate_kernel_function(proc);
 
@@ -2133,6 +2319,9 @@ void gm_cuda_gen::generate_proc(ast_procdef* proc) {
 
     generateMacroDefine(getCurrentScope());
     getCurrentScope()->printScopeVariables();
+    printf("GlobalMemory Scope:\n");
+    generateMacroDefine(getGPUScope());
+    getGPUScope()->printScopeVariables();
     setGlobalScope(NULL);
     setCurrentScope(NULL);
 }
@@ -2183,6 +2372,8 @@ void gm_cuda_gen::generate_kernel_function(ast_procdef* proc) {
 
     Out.push(") {\n");
 
+    Body.push(getGlobalScope()->getMacroName().c_str());
+    Body.pushln(";");
     Out.NL();
 
 }
