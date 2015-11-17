@@ -54,6 +54,7 @@ bool gm_cuda_gen::do_generate() {
         return false;
     }
 
+    do_generate_user_main();
     do_generate_end();
     close_output_files();
     return true;
@@ -434,6 +435,10 @@ ast_typedecl* getNewTypeDecl(int typeId) {
         return ast_typedecl::new_primtype(GMTYPE_INT);
     } else if (gm_is_edge_iterator_type(typeId)){
         return ast_typedecl::new_primtype(GMTYPE_INT);
+    } else if (gm_is_graph_type(typeId)){
+        return ast_typedecl::new_graphtype(typeId);
+    } else  if (gm_is_property_type(typeId)){
+        return ast_typedecl::new_primtype(GMTYPE_INT);
     } else {
         // Not expected any other type.
         assert(false);
@@ -505,6 +510,9 @@ public:
     }
 
     scope* getParentScope() {  return parent;  }
+    void setGPUScope(scope* g) {
+        gpuScope = g;
+    }
 
     void setMacroName(std::string n) { name = n;  }
     std::string getMacroName()  { return name;  }
@@ -534,8 +542,16 @@ public:
                 }
                 if (insideCudaKernel) {
                     var->setMemLoc(THREAD_LOCAL);
+                    /*if (var->getMemLoc() == GLOBAL_GPU_MEMORY) {
+                        gpuScope->variables.push_back(var);
+                        //variables.erase(varDeclIt);
+                    }*/
                 } else {
                     var->setMemLoc(CPU_MEMORY);
+                    /*if (var->getMemLoc() == GLOBAL_GPU_MEMORY) {
+                        gpuScope->variables.push_back(var);
+                        //variables.erase(varDeclIt);
+                    }*/
                 }
                 return;
             }
@@ -662,6 +678,7 @@ protected:
     ast_sent* enclosingStmt;
     ast_procdef* enclosingProc;
     scope* parent;
+    scope* gpuScope;
     std::string name;
     std::list<scope_entry*> variables;
     std::list<ast_vardecl*> varDecls;
@@ -713,8 +730,13 @@ void gm_cuda_gen::markGPUAndCPUGlobal() {
     for (; varListIt != varList.end(); varListIt++) {
         ast_id* varId = (*varListIt)->getId();
         ast_typedecl* varType = (*varListIt)->getTypeDecl();
-        if ((*varListIt)->getMemLoc() == GLOBAL_GPU_MEMORY)
+        if ((*varListIt)->getMemLoc() == GLOBAL_GPU_MEMORY) {
             GPUMemoryScope->addVariableDeclaration(varId, varType);
+            ast_id* newVarId = varId->copy(false);
+            std::string str = std::string("h_") + varId->get_orgname();
+            newVarId->set_orgname(str.c_str());
+            globalScope->addVariableDeclaration(newVarId, varType);
+        }
         else
             globalScope->addVariableDeclaration(varId, varType);
     }
@@ -1346,8 +1368,11 @@ void gm_cuda_gen::generate_lhs_id(ast_id* i) {
     i->dump_tree(2);
     printf("\nEnded..\n\n");
     currentScope->addVariableToScope(i);
-    if (isOnGPUMemory(i)) {
-        Body.push("d_");
+    //if (isOnGPUMemory(i)) {
+    symbol*s = transfer.findSymbol(i->get_orgname());
+    if (!insideCudaKernel && s != NULL && s->getMemLoc() == GPUMemory
+        && !printingMacro) {
+        Body.push("h_");
     }
     Body.push(i->get_orgname());
 }
@@ -1375,8 +1400,13 @@ void gm_cuda_gen::generate_rhs_id(ast_id* i) {
     if(doPrint)
     i->dump_tree(2);
     printf("\nEnded..\n\n");
-    Body.push(i->get_orgname());
     currentScope->addVariableToScope(i);
+    symbol*s = transfer.findSymbol(i->get_orgname());
+    if (!insideCudaKernel && s != NULL && s->getMemLoc() == GPUMemory
+        && !printingMacro) {
+        Body.push("h_");
+    }
+    Body.push(i->get_orgname());
 }
 
 void gm_cuda_gen::generate_rhs_field(ast_field* i) {
@@ -1583,6 +1613,8 @@ const char* gm_cuda_gen::get_type_string(ast_typedecl* t) {
 
     if (t->is_primitive()) {
         return get_type_string(t->get_typeid());
+    } else if (t->is_nodeedge()) {
+        return get_type_string(t->get_typeid());
     } else if (t->is_property()) {
         ast_typedecl* t2 = t->get_target_type();
         assert(t2 != NULL);
@@ -1624,8 +1656,11 @@ const char* gm_cuda_gen::get_type_string(ast_typedecl* t) {
         const char* valueType = get_type_string(mapType->get_value_type());
         sprintf(temp, "gm_map<%s, %s>", keyType, valueType);
         return gm_strdup(temp);
+    } else if (t->is_graph()) {
+        return "int* ";
     } else
-        return /*get_lib()->*/get_type_string(t);
+        assert(false);
+        //return /*get_lib()->*/get_type_string(t);
 
     return "ERROR";
 }
@@ -1768,6 +1803,11 @@ void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
         Body.push(", ");
         generate_expr(i->get_rhs());
         Body.pushln(");");
+        
+        if (i->is_target_scalar()) {
+            ast_id* id = i->get_lhs_scala();
+            CUDAMemcpyToSymbol(id);
+        }
     } else {
         std::string str;
         // TODO
@@ -1970,12 +2010,18 @@ void gm_cuda_gen::generate_sent_vardecl(ast_vardecl* v) {
 
     if (t->is_property()) {
         ast_idlist* idl = v->get_idlist();
-        assert(idl->get_length() == 1);
-        generate_lhs_id(idl->get_item(0));
+        //assert(idl->get_length() == 1);
+        //generate_lhs_id(idl->get_item(0));
         //declare_prop_def(t, idl->get_item(0));
+        generate_idlist_primitive(idl);
+        Body.push(";");
+        if (printingMacro)
+            Body.pushln("   \\");
+        else
+            Body.pushln("");
     } else if (t->is_collection()) {
         ast_idlist* idl = v->get_idlist();
-        assert(idl->get_length() == 1);
+        //assert(idl->get_length() == 1);
         generate_lhs_id(idl->get_item(0));
         //get_lib()->add_collection_def(idl->get_item(0));
     } else if (t->is_primitive()) {
@@ -2013,6 +2059,7 @@ void gm_cuda_gen::generate_sent_foreach(ast_foreach* i) {
         Body = cudaBody;
         scope* newScope = new scope(i, currentProc);
         newScope->setParentScope(getCurrentScope());
+        newScope->setGPUScope(getGPUScope());
         setCurrentScope(newScope);
         callStr = generate_newKernelFunction(i);
     }
@@ -2104,6 +2151,7 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
             isFirst = false;
 
             ast_id* id = idlist->get_item(ii);
+            globalScope->addVariableDeclaration(id, type);
             bool found = false;
             for (std::list<std::string>::iterator strIt = argList.begin();
                  strIt != argList.end(); strIt++) {
@@ -2150,6 +2198,7 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
                 ast_field* f = (ast_field*)varUsed;
                 ast_typedecl* targetType = f->getTypeInfo()->get_target_type();
                 
+                globalScope->addVariableDeclaration(f->get_second(), f->getTypeInfo());
                 bool found = false;
                 for (std::list<std::string>::iterator strIt = argList.begin();
                      strIt != argList.end(); strIt++) {
@@ -2190,12 +2239,31 @@ void gm_cuda_gen::generate_sent_bfs(ast_bfs* i) {
 /*
 void gm_cuda_gen::generate_sent(ast_sent* i) {
 
-}
+}*/
 
 void gm_cuda_gen::generate_sent_assign(ast_assign* i) {
 
-}
+    if (i->is_target_scalar()) {
+        generate_lhs_id(i->get_lhs_scala());
+    } else {
+        generate_lhs_field(i->get_lhs_field());
+    }
 
+    Body.push(" = ");
+
+    generate_expr(i->get_rhs());
+
+    Body.pushln(";");
+    
+    if (i->is_target_scalar()) {
+        ast_id* id = i->get_lhs_scala();
+        CUDAMemcpyToSymbol(id);
+    } else {
+        ast_field* f = i->get_lhs_field();
+        CUDAMemcpyToSymbol(f);
+    }
+}
+/*
 void gm_cuda_gen::generate_sent_if(ast_if* i) {
 
 }
@@ -2307,10 +2375,16 @@ void gm_cuda_gen::generate_proc(ast_procdef* proc) {
     newScope->setMacroName(macroName);
     setGPUScope(newScope);
     
+    getGlobalScope()->setGPUScope(newScope);
+    newScope->setGPUScope(newScope);
+
+
     cudaBody.push(getGPUScope()->getMacroName().c_str());
     cudaBody.pushln(";");
     cudaBody.flush();
     
+    Body.push(getGlobalScope()->getMacroName().c_str());
+    Body.pushln(";");
     generate_kernel_function(proc);
 
     generate_sent(proc->get_body());
@@ -2322,7 +2396,7 @@ void gm_cuda_gen::generate_proc(ast_procdef* proc) {
     printf("GlobalMemory Scope:\n");
     generateMacroDefine(getGPUScope());
     getGPUScope()->printScopeVariables();
-    setGlobalScope(NULL);
+    //setGlobalScope(NULL);
     setCurrentScope(NULL);
 }
 
@@ -2372,8 +2446,6 @@ void gm_cuda_gen::generate_kernel_function(ast_procdef* proc) {
 
     Out.push(") {\n");
 
-    Body.push(getGlobalScope()->getMacroName().c_str());
-    Body.pushln(";");
     Out.NL();
 
 }
@@ -2382,3 +2454,201 @@ void gm_cuda_gen::generate_kernel_function(ast_procdef* proc) {
 void gm_cuda_gen::generate_mapaccess(ast_expr_mapaccess* e) {
 
 } */
+
+std::string gm_cuda_gen::getSizeOfVariable(ast_id* i) {
+
+    int typeId = i->getTypeSummary();
+    if (gm_is_prim_type(typeId))
+        return std::string("1");
+    else if (gm_is_node_property_type(typeId))
+        return std::string("numNodes");
+    else if (gm_is_edge_property_type(typeId))
+        return std::string("numEdges");
+    else if (gm_is_nodeedge_type(typeId))
+        return std::string("1");
+    else
+        return std::string("INVALID");
+}
+
+void gm_cuda_gen::CUDAAllocateMemory(ast_vardecl* varDecl, bool onHost) {
+
+    ast_typedecl* varType = varDecl->get_type();
+    ast_idlist* idList = varDecl->get_idlist();
+    std::string str, errCheck = "CUDA_ERR_CHECK;";
+    for (int i = 0; i < idList->get_length(); i++) {
+        ast_id* varId = idList->get_item(i);
+        if (varId->getSymInfo() == NULL)
+            continue;
+        int typeId = varId->getTypeSummary();
+        if (gm_is_prim_type(typeId) || gm_is_nodeedge_type(typeId))
+            continue;
+        str = "err = cudaMalloc((void **)&";
+        if (onHost)
+            str += "h_";
+        str += std::string(varId->get_orgname()) + ", " + getSizeOfVariable(varId) + " * ";
+        str += std::string("sizeof(");
+        if (varType->is_property()) {
+            str += get_type_string(varType->get_target_type());
+        }
+        else {
+            str += get_type_string(varType);
+        }
+        str += "));";
+        Body.pushln(str.c_str());
+        Body.pushln(errCheck.c_str());
+    }
+}
+
+void gm_cuda_gen::CUDAMemcpyToSymbol(ast_node* n) {
+
+    if (n->get_nodetype() == AST_ID) {
+        ast_id* id = (ast_id*)n;
+        symbol*s = transfer.findSymbol(id->get_orgname());
+        std::string str;
+        str = "err = cudaMemcpyToSymbol(";
+        str += std::string(id->get_orgname()) + ", &";
+        if (!insideCudaKernel && s != NULL && s->getMemLoc() == GPUMemory
+            && !printingMacro) {
+            str += "h_";
+        } else {
+            return;
+        }
+        str += id->get_orgname() + std::string(", ") + std::string("sizeof(");
+        str += get_type_string(id->getTypeSummary());
+        str += "), 0, cudaMemcpyHostToDevice);";
+        Body.pushln(str.c_str());
+        str = "CUDA_ERR_CHECK;";
+        Body.pushln(str.c_str());
+    } else if (n->get_nodetype() == AST_FIELD) {
+        ast_field* f = (ast_field*)n;
+        CUDAMemcpyToSymbol(f->get_second());
+        ast_id* id = f->get_second();
+        symbol*s = transfer.findSymbol(id->get_orgname());
+        std::string str;
+        str = "err = cudaMemcpy(";
+        str += std::string(id->get_orgname()) + " + " + f->get_second()->get_orgname() + ", ";
+        if (!insideCudaKernel && s != NULL && s->getMemLoc() == GPUMemory
+            && !printingMacro) {
+            str += "h_";
+        } else {
+            return;
+        }
+        str += id->get_orgname() + std::string(", ");
+        str += getSizeOfVariable(id) + " * " + std::string("sizeof(");
+        ast_typedecl* varType = id->getTypeInfo();
+        if (varType->is_property()) {
+            str += get_type_string(varType->get_target_type());
+        }
+        else {
+            str += get_type_string(varType);
+        }
+        str += "), cudaMemcpyHostToDevice);";
+        Body.pushln(str.c_str());
+        str = "CUDA_ERR_CHECK;";
+        Body.pushln(str.c_str());
+    }
+}
+
+void gm_cuda_gen::do_generate_user_main() {
+    Body.NL();
+    Body.NL();
+    Body.push("// "); Body.push(fname); Body.push(" -? : for how to run generated main program\n");
+    Body.pushln("int main(int argc, char** argv)");
+    Body.pushln("{");
+    Body.NL();
+
+    assert(FE.get_all_procs().size() == 1);
+
+    std::list<ast_vardecl*>GPUVarList = getGPUScope()->getVarDecls();
+    
+    for (std::list<ast_vardecl*>::iterator I = GPUVarList.begin();
+         I != GPUVarList.end(); I++) {
+        CUDAAllocateMemory(*I, true);
+    }
+
+    GPUVarList = getGlobalScope()->getVarDecls();
+    
+    for (std::list<ast_vardecl*>::iterator I = GPUVarList.begin();
+         I != GPUVarList.end(); I++) {
+        CUDAAllocateMemory(*I, false);
+    }
+/*
+    ast_procdef* proc = FE.get_all_procs()[0];
+    ast_typedecl* ret_type = proc->get_return_type();
+    std::list<ast_argdecl*>::iterator I;
+    std::list<ast_argdecl*>& In = proc->get_in_args();
+    std::list<ast_argdecl*>& Out = proc->get_out_args();
+
+    // declare 
+    for(I=In.begin(); I!= In.end(); I++) {
+       print_declare_argument(Body, *I, true, false);
+    }
+    for(I=Out.begin(); I!= Out.end(); I++) {
+       print_declare_argument(Body, *I, false, true);
+    }
+    if (!ret_type->is_void()) {
+        assert((ret_type->is_nodeedge()) || (ret_type->is_primitive()));
+        Body.push("Main.declare_return(");
+        Body.push(get_runtime_type_string(ret_type->getTypeSummary()));
+        Body.pushln(");");
+    }
+
+    Body.NL();
+    Body.pushln("if (!Main.process_arguments(argc, argv)) {");
+    Body.pushln("return EXIT_FAILURE;");
+    Body.pushln("}");
+
+    Body.NL();
+    Body.pushln("if (!Main.do_preprocess()) {");
+    Body.pushln("return EXIT_FAILURE;");
+    Body.pushln("}");
+
+    Body.NL();
+    Body.pushln("Main.begin_usermain();");
+    if (!ret_type->is_void()) {
+        Body.push("Main.");
+        switch(ret_type->getTypeSummary()) {
+            case GMTYPE_INT: Body.push("set_return_i("); break;
+            case GMTYPE_LONG: Body.push("set_return_l("); break;
+            case GMTYPE_BOOL: Body.push("set_return_b("); break;
+            case GMTYPE_DOUBLE: Body.push("set_return_d("); break;
+            case GMTYPE_FLOAT: Body.push("set_return_f("); break;
+            case GMTYPE_NODE: Body.push("set_return_n("); break;
+            case GMTYPE_EDGE: Body.push("set_return_e("); break;
+            default: assert(false); break;
+        }
+    }
+    Body.push(proc->get_procname()->get_genname());
+    Body.pushln("(");
+    int total = In.size() + Out.size();;
+    int cnt = 0;
+    for(I=In.begin(); I!= In.end(); I++, cnt++) {
+        print_argument_loader(Body, *I, (total-1==cnt));
+    }
+    for(I=Out.begin(); I!= Out.end(); I++, cnt++) {
+        print_argument_loader(Body, *I, (total-1==cnt));
+    }
+
+
+    if (!ret_type->is_void())  {
+        Body.NL();
+        Body.pushln(")");
+        Body.pushln(");");
+    } else {
+        Body.pushln(");");
+    }
+
+
+    Body.pushln("Main.end_usermain();");
+
+    Body.NL();
+    Body.pushln("if (!Main.do_postprocess()) {");
+    Body.pushln("return EXIT_FAILURE;");
+    Body.pushln("}");
+
+    Body.NL();
+    Body.pushln("return EXIT_SUCCESS;");
+    Body.pushln("}");
+    Body.pushln("#endif");*/
+}
+

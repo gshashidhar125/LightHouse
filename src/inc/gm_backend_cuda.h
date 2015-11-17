@@ -122,9 +122,9 @@ public:
     virtual void generate_sent_foreach(ast_foreach *a);
     virtual void generate_sent_bfs(ast_bfs* b);
 
-/*    virtual void generate_sent(ast_sent* a);
+/*    virtual void generate_sent(ast_sent* a);*/
     virtual void generate_sent_assign(ast_assign* a);
-    virtual void generate_sent_if(ast_if* a);
+/*    virtual void generate_sent_if(ast_if* a);
     virtual void generate_sent_while(ast_while* a);
     //virtual void generate_sent_block(ast_sentblock *b);
     virtual void generate_sent_block(ast_sentblock* b, bool need_br);
@@ -143,6 +143,10 @@ public:
     virtual void generate_kernel_function(ast_procdef* proc);
     virtual std::string generate_newKernelFunction(ast_foreach* f);
     virtual void generate_CudaAssignForIterator(ast_id* iter, bool isParallel);
+    void CUDAAllocateMemory(ast_vardecl* varDecl, bool isHost);
+    void CUDAMemcpyToSymbol(ast_node* n);
+    void do_generate_user_main();
+    std::string getSizeOfVariable(ast_id* i);
 
     virtual std::string getNewTempVariable(ast_node* n);
     virtual void setGlobalScope(scope* s) {
