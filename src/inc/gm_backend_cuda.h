@@ -127,8 +127,8 @@ public:
 /*    virtual void generate_sent_if(ast_if* a);
     virtual void generate_sent_while(ast_while* a);
     //virtual void generate_sent_block(ast_sentblock *b);
-    virtual void generate_sent_block(ast_sentblock* b, bool need_br);
-    virtual void generate_sent_return(ast_return *r);*/
+    virtual void generate_sent_block(ast_sentblock* b, bool need_br);*/
+    virtual void generate_sent_return(ast_return *r);
     virtual void generate_sent_call(ast_call* c);
 /*    virtual void generate_sent_foreign(ast_foreign* f);
 */    //virtual const char* get_function_name_map_reduce_assign(int reduceType);
@@ -145,10 +145,13 @@ public:
     virtual void generate_CudaAssignForIterator(ast_id* iter, bool isParallel);
     void CUDAAllocateMemory(ast_vardecl* varDecl, bool isHost);
     void CUDAMemcpyToSymbol(ast_node* n);
+    void CUDAMemcpyFromSymbol(ast_node* n);
+    void CUDAMemcpy(ast_id* dst, ast_id* dstOffset, std::string src, std::string typeString, bool isHostToDevice);
     void do_generate_user_main();
     std::string getSizeOfVariable(ast_id* i);
 
     virtual std::string getNewTempVariable(ast_node* n);
+    virtual std::string getTempVariable(ast_typedecl* varType);
     virtual void setGlobalScope(scope* s) {
         globalScope = s;
     }
