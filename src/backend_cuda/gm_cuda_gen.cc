@@ -105,10 +105,12 @@ void gm_cuda_gen::do_generate_begin() {
     char temp[1024];
     sprintf(temp, "%s.h", fname);
     add_include(temp, Body, false);
-    add_include(temp, cudaBody, false);
+    sprintf(temp, "%s.cu", fname);
+    add_include(temp, Body, false);
+    Body.pushln("#include <fstream>");
     
-    sprintf(temp, "GlobalBarrier.cuh");
-    add_include(temp, cudaBody, false);
+    /*sprintf(temp, "GlobalBarrier.cuh");
+    add_include(temp, cudaBody, false);*/
     
     Body.NL();
     cudaBody.NL();
@@ -655,7 +657,15 @@ public:
             } else if ((*varDeclIt)->get_type()->get_typeid() == varType->get_typeid()) { //&&
                 //       (*varDeclIt).second == currentScope
                 //assert(correctListToAdd == NULL);
-                correctListToAdd = varList;
+                if (varType->is_property()) {
+                    if ((*varDeclIt)->get_type()->is_property() &&
+                        (varType->getTargetTypeSummary() == (*varDeclIt)->get_type()->getTargetTypeSummary())) {
+
+                        correctListToAdd = varList;
+                    }
+                } else {
+                    correctListToAdd = varList;
+                }
             }
         }
         if (correctListToAdd == NULL) {
@@ -665,6 +675,9 @@ public:
             return;
         }
             
+            printf("New Variable Added to Scope = %s\n", varId->get_orgname());
+            varType->dump_tree(2);
+            printf("Ended Scope add\n");
         correctListToAdd->add_id(varId);
     }
 
@@ -1349,7 +1362,7 @@ bool gm_cuda_gen::open_output_files() {
     }
     Header.set_output_file(f_header);
 
-    sprintf(temp, "%s/%s.cpp", dname, fname);
+    sprintf(temp, "%s/%s_main.cu", dname, fname);
     f_body = fopen(temp, "w");
     if (f_body == NULL) {
         gm_backend_error(GM_ERROR_FILEWRITE_ERROR, temp);
@@ -1823,6 +1836,9 @@ void gm_cuda_gen::generateMacroDefine(scope* s) {
         if (s == GPUMemoryScope)
             Body.push("__device__ ");
         generate_sent_vardecl(*varDeclIt);
+        printf("New generation of decl.\n");
+        (*varDeclIt)->dump_tree(2);
+        printf("Ended Generation\n");
     }
     if (s == GPUMemoryScope) {
         std::string str = "__device__ bool* gm_threadBlockBarrierReached;";
@@ -1832,9 +1848,21 @@ void gm_cuda_gen::generateMacroDefine(scope* s) {
         std::string str = "bool* host_threadBlockBarrierReached;";
         Body.push(str.c_str());
         Body.pushln("  \\");
+        str = "cudaError_t err;";
+        Body.push(str.c_str());
+        Body.pushln("  \\");
     }
     printingMacro = false;
     Body.pushln(" ");
+    
+    if (s == globalScope) {
+        Body.pushln("#define CUDA_ERR_CHECK  \\");
+        Body.pushln("if( err != cudaSuccess) { \\");
+        Body.pushln("printf(\"CUDA error: %s ** at Line %d\\n\", cudaGetErrorString(err), __LINE__); \\");
+        Body.pushln("    return EXIT_FAILURE; \\");
+        Body.pushln("}\\");
+        Body.pushln(" ");
+    }
     Body.flush();
     Body = *tempBody;
 }
@@ -2183,9 +2211,9 @@ void gm_cuda_gen::generate_CudaAssignForIterator(ast_id* iter, bool isParallel) 
         
         str += iterSym->getName() + std::string(" = ");
         if (gm_is_any_neighbor_node_iteration(iterSym->getSymbolIterType()))
-            str += "G[1][iter]; ";
+            str += "G[1][iter]";
         else if (gm_is_any_neighbor_edge_iteration(iterSym->getSymbolIterType()))
-            str += "G[1][iter]; ";
+            str += "G[1][iter]";
         str += ") ";
 
         Body.push(str.c_str());
@@ -2269,6 +2297,7 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
             ast_node* varUsed = *it;
             if (varUsed->get_nodetype() == AST_FIELD) {
                 ast_field* f = (ast_field*)varUsed;
+                //ast_typedecl* targetType = f->getTypeInfo()->get_target_type();
                 ast_typedecl* targetType = f->getTypeInfo()->get_target_type();
                 
                 globalScope->addVariableDeclaration(f->get_second(), f->getTypeInfo());
@@ -2552,10 +2581,13 @@ void gm_cuda_gen::generate_proc(ast_procdef* proc) {
 
     cudaBody.push(getGPUScope()->getMacroName().c_str());
     cudaBody.pushln(";");
+    add_include("GlobalBarrier.cuh", cudaBody, false);
     cudaBody.flush();
     
     Body.push(getGlobalScope()->getMacroName().c_str());
     Body.pushln(";");
+    char temp[1024];
+    add_include("graph.h", Body, false);
     generate_kernel_function(proc);
 
     generate_sent(proc->get_body());
@@ -2576,7 +2608,9 @@ void gm_cuda_gen::generate_proc(ast_procdef* proc) {
 void gm_cuda_gen::generate_kernel_function(ast_procdef* proc) {
 
     gm_code_writer& Out = Body;
-    std::string str("void ");
+    std::string str;
+    ast_typedecl* ret_type = proc->get_return_type();
+    str = get_type_string(ret_type) + std::string(" ");
     char temp[1024];
 
     str = str + proc->get_procname()->get_genname() + "_CPU";
@@ -2633,9 +2667,9 @@ std::string gm_cuda_gen::getSizeOfVariable(ast_id* i) {
     if (gm_is_prim_type(typeId))
         return std::string("1");
     else if (gm_is_node_property_type(typeId))
-        return std::string("numNodes");
+        return std::string("NumNodes");
     else if (gm_is_edge_property_type(typeId))
-        return std::string("numEdges");
+        return std::string("NumEdges");
     else if (gm_is_nodeedge_type(typeId))
         return std::string("1");
     else
@@ -2662,8 +2696,8 @@ void gm_cuda_gen::CUDAAllocateMemory(ast_vardecl* varDecl, bool onHost) {
             str2 = str;
             str += "[0]";
             str2 += "[1]";
-            str += ", NumNodes * sizeof(int));";
-            str2 += ", NumEdges * sizeof(int));";
+            str += ", (NumNodes + 2) * sizeof(int));";
+            str2 += ", (NumEdges + 1) * sizeof(int));";
             Body.pushln(str.c_str());
             Body.pushln(errCheck.c_str());
             Body.pushln(str2.c_str());
@@ -2763,7 +2797,7 @@ void gm_cuda_gen::CUDAMemcpy(ast_id* dst, ast_id* dstOffset, std::string src, st
 
     std::string str = "err = cudaMemcpy(";
     str += std::string(dst->get_orgname()) + " + h_" + dstOffset->get_orgname();
-    str += ", " + src + ", " + typeString + ", ";
+    str += ", &" + src + ", " + typeString + ", ";
     if (isHostToDevice)
         str += "cudaMemcpyHostToDevice";
     else
@@ -2775,10 +2809,23 @@ void gm_cuda_gen::CUDAMemcpy(ast_id* dst, ast_id* dstOffset, std::string src, st
 void gm_cuda_gen::do_generate_user_main() {
     Body.NL();
     Body.NL();
+    Body.pushln("using namespace std;");
     Body.push("// "); Body.push(fname); Body.push(" -? : for how to run generated main program\n");
-    Body.pushln("int main(int argc, char** argv)");
+    Body.pushln("int main(int argc, char* argv[])");
     Body.pushln("{");
     Body.NL();
+
+    Body.pushln("if (argc != 2 || argv[1] == NULL) {");
+    Body.pushln("printf(\"Wrong Number of Arguments\");");
+    Body.pushln("exit(1);");
+    Body.pushln("}");
+    Body.pushln("ifstream inputFile;");
+    Body.pushln("inputFile.open(argv[1]);");
+    Body.pushln("if (!inputFile.is_open()){");
+    Body.pushln("printf(\"invalid file\");");
+    Body.pushln("exit(1);");
+    Body.pushln("}");
+    Body.pushln("inputFile >> NumNodes >> NumEdges;");
 
     assert(FE.get_all_procs().size() == 1);
 
@@ -2803,11 +2850,16 @@ void gm_cuda_gen::do_generate_user_main() {
     str = "CUDA_ERR_CHECK;";
     Body.pushln(str.c_str());
     str = "err = cudaMemcpyToSymbol(gm_threadBlockBarrierReached, ";
-    str += "&gm_threadBlockBarrierReached, sizeof(bool *), 0, ";
-    str += "cudaMemcpuHostToDevice);";
+    str += "&host_threadBlockBarrierReached, sizeof(bool *), 0, ";
+    str += "cudaMemcpyHostToDevice);";
     Body.pushln(str.c_str());
     str = "CUDA_ERR_CHECK;";
     Body.pushln(str.c_str());
+
+    Body.pushln("int* h_G[2];");
+    Body.pushln("printf(\"Graph Population began\\n\");");
+    Body.pushln("populate(argv[1], h_G);");
+    Body.pushln("printf(\"Graph Population end\\n\");");
 
     ast_procdef* proc = FE.get_all_procs()[0];
     ast_typedecl* ret_type = proc->get_return_type();
@@ -2828,10 +2880,14 @@ void gm_cuda_gen::do_generate_user_main() {
         str += " MainReturn;";
         Body.pushln(str.c_str());
     }
-    Body.pushln("populateGraph(argc, argv);");
 
     char temp[1024];
 
+    if (!ret_type->is_void()) {
+        str = "MainReturn";
+        Body.push(str.c_str());
+        Body.push(" = ");
+    }
     str = std::string(proc->get_procname()->get_genname()) + "_CPU";
     Body.push(str.c_str());
 
@@ -2878,7 +2934,9 @@ void gm_cuda_gen::do_generate_user_main() {
     Body.pushln("}");
 
     Body.pushln("return EXIT_SUCCESS;");*/
+    if (!ret_type->is_void()) {
+        Body.pushln("return MainReturn;");
+    }
     Body.pushln("}");
-    Body.pushln("#endif");
 }
 

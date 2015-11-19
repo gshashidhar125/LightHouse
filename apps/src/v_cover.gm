@@ -1,11 +1,11 @@
-Proc v_cover(G: Graph, select: E_P<Bool>) : Int
+Proc v_cover(G: Graph, selectEdge: E_P<Bool>) : Int
 {
     N_P<Int> Deg;
     N_P<Bool> Covered;
 
     G.Deg = G.Degree() + G.InDegree();
     G.Covered = False;
-    G.select = False;
+    G.selectEdge = False;
     Int remain = (Int) (G.NumEdges()*2);
     While(remain > 0) {
         Int max_val = 0;
@@ -19,7 +19,7 @@ Proc v_cover(G: Graph, select: E_P<Bool>) : Int
         remain = remain - max_val;
         from.Deg = 0;
         to.Deg = 0;
-        e.select = True;
+        e.selectEdge = True;
         from.Covered =True;
         to.Covered = True;
     }
