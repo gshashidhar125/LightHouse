@@ -249,20 +249,20 @@ public:
             std::string temp = parentSym->getName();
             switch(iterType) {
                 case GMITER_NODE_NBRS:
-                        indexStr = "G[1][G[0][" + temp + "] + tId]";
-                        numOfThreads = "G[0][" + temp + " + 1] - G[0][" + temp + "]";
+                        indexStr = "G1[G0[" + temp + "] + tId]";
+                        numOfThreads = "G0[" + temp + " + 1] - G0[" + temp + "]";
                         break;
                 case GMITER_NODE_IN_NBRS:
-                        indexStr = "IN-Nbrs G[1][G[0][" + temp + "] + tId]";
-                        numOfThreads = "IN-Nbrs G[0][" + temp + " + 1] - G[0][" + temp + "]";
+                        indexStr = "IN-Nbrs G1[G0[" + temp + "] + tId]";
+                        numOfThreads = "IN-Nbrs G0[" + temp + " + 1] - G0[" + temp + "]";
                         break;
                 case GMITER_NODE_UP_NBRS:
-                        indexStr = "UP-Nbrs G[1][G[0][" + temp + "] + tId]";
-                        numOfThreads = "Up-Nbrs G[0][" + temp + " + 1] - G[0][" + temp + "]";
+                        indexStr = "UP-Nbrs G1[G0[" + temp + "] + tId]";
+                        numOfThreads = "Up-Nbrs G0[" + temp + " + 1] - G0[" + temp + "]";
                         break;
                 case GMITER_NODE_DOWN_NBRS:
-                        indexStr = "DOWN-Nbrs G[1][G[0][" + temp + "] + tId]";
-                        numOfThreads = "DOWN-Nbrs G[0][" + temp + " + 1] - G[0][" + temp + "]";
+                        indexStr = "DOWN-Nbrs G1[G0[" + temp + "] + tId]";
+                        numOfThreads = "DOWN-Nbrs G0[" + temp + " + 1] - G0[" + temp + "]";
                         break;
             }
         } else if (parentSym->type->is_edge()) {
@@ -290,20 +290,20 @@ public:
             std::string temp = parentSym->getName();
             switch(iterType) {
                 case GMITER_NODE_NBRS:
-                        indexStr = "G[1][G[0][" + temp + "] + tId]";
-                        numOfThreads = "G[0][" + temp + " + 1] - G[0][" + temp + "]";
+                        indexStr = "G1[G0[" + temp + "] + tId]";
+                        numOfThreads = "G0[" + temp + " + 1] - G0[" + temp + "]";
                         break;
                 case GMITER_NODE_IN_NBRS:
-                        indexStr = "IN-Nbrs G[1][G[0][" + temp + "] + tId]";
-                        numOfThreads = "IN-Nbrs G[0][" + temp + " + 1] - G[0][" + temp + "]";
+                        indexStr = "IN-Nbrs G1[G0[" + temp + "] + tId]";
+                        numOfThreads = "IN-Nbrs G0[" + temp + " + 1] - G0[" + temp + "]";
                         break;
                 case GMITER_NODE_UP_NBRS:
-                        indexStr = "UP-Nbrs G[1][G[0][" + temp + "] + tId]";
-                        numOfThreads = "Up-Nbrs G[0][" + temp + " + 1] - G[0][" + temp + "]";
+                        indexStr = "UP-Nbrs G1[G0[" + temp + "] + tId]";
+                        numOfThreads = "Up-Nbrs G0[" + temp + " + 1] - G0[" + temp + "]";
                         break;
                 case GMITER_NODE_DOWN_NBRS:
-                        indexStr = "DOWN-Nbrs G[1][G[0][" + temp + "] + tId]";
-                        numOfThreads = "DOWN-Nbrs G[0][" + temp + " + 1] - G[0][" + temp + "]";
+                        indexStr = "DOWN-Nbrs G1[G0[" + temp + "] + tId]";
+                        numOfThreads = "DOWN-Nbrs G0[" + temp + " + 1] - G0[" + temp + "]";
                         break;
             }
         } else if (parentSym->type->is_edge_iterator()) {
@@ -348,20 +348,20 @@ public:
             std::string temp = parentSym->getName();
             switch(iterType) {
                 case GMITER_NODE_NBRS:
-                        startIndexStr = "G[0][" + temp + "]";
-                        endIndexStr = "G[0][" + temp + " + 1]";
+                        startIndexStr = "G0[" + temp + "]";
+                        endIndexStr = "G0[" + temp + " + 1]";
                         break;
                 case GMITER_NODE_IN_NBRS:
-                        startIndexStr = "IN-Nbrs G[1][G[0][" + temp + "]]";
-                        endIndexStr = "IN-Nbrs G[1][G[0][" + temp + " + 1]]";
+                        startIndexStr = "IN-Nbrs G1[G0[" + temp + "]]";
+                        endIndexStr = "IN-Nbrs G1[G0[" + temp + " + 1]]";
                         break;
                 case GMITER_NODE_UP_NBRS:
-                        startIndexStr = "UP-Nbrs G[1][G[0][" + temp + "]]";
-                        endIndexStr = "UP-Nbrs G[1][G[0][" + temp + " + 1]]";
+                        startIndexStr = "UP-Nbrs G1[G0[" + temp + "]]";
+                        endIndexStr = "UP-Nbrs G1[G0[" + temp + " + 1]]";
                         break;
                 case GMITER_NODE_DOWN_NBRS:
-                        startIndexStr = "DOWN-Nbrs G[1][G[0][" + temp + "]]";
-                        endIndexStr = "DOWN-Nbrs G[1][G[0][" + temp + " + 1]]";
+                        startIndexStr = "DOWN-Nbrs G1[G0[" + temp + "]]";
+                        endIndexStr = "DOWN-Nbrs G1[G0[" + temp + " + 1]]";
                         break;
             }
         } else if (parentSym->type->is_edge()) {
@@ -389,20 +389,20 @@ public:
             std::string temp = parentSym->getName();
             switch(iterType) {
                 case GMITER_NODE_NBRS:
-                        startIndexStr = "G[0][" + temp + "]";
-                        endIndexStr = "G[0][" + temp + " + 1]";
+                        startIndexStr = "G0[" + temp + "]";
+                        endIndexStr = "G0[" + temp + " + 1]";
                         break;
                 case GMITER_NODE_IN_NBRS:
-                        startIndexStr = "IN-Nbrs G[1][G[0][" + temp + "]]";
-                        endIndexStr = "IN-Nbrs G[1][G[0][" + temp + " + 1]]";
+                        startIndexStr = "IN-Nbrs G1[G0[" + temp + "]]";
+                        endIndexStr = "IN-Nbrs G1[G0[" + temp + " + 1]]";
                         break;
                 case GMITER_NODE_UP_NBRS:
-                        startIndexStr = "UP-Nbrs G[1][G[0][" + temp + "]]";
-                        endIndexStr = "UP-Nbrs G[1][G[0][" + temp + " + 1]]";
+                        startIndexStr = "UP-Nbrs G1[G0[" + temp + "]]";
+                        endIndexStr = "UP-Nbrs G1[G0[" + temp + " + 1]]";
                         break;
                 case GMITER_NODE_DOWN_NBRS:
-                        startIndexStr = "DOWN-Nbrs G[1][G[0][" + temp + "]]";
-                        endIndexStr = "DOWN-Nbrs G[1][G[0][" + temp + " + 1]]";
+                        startIndexStr = "DOWN-Nbrs G1[G0[" + temp + "]]";
+                        endIndexStr = "DOWN-Nbrs G1[G0[" + temp + " + 1]]";
                         break;
             }
         } else if (parentSym->type->is_edge_iterator()) {
@@ -1503,11 +1503,11 @@ void gm_cuda_gen::generate_expr_builtin(ast_expr* i) {
                 break;  
 
         case GM_BLTIN_NODE_DEGREE: 
-                str = "G[0][" + std::string(b->get_driver()->get_orgname()) + " + 1] - G[0][" + b->get_driver()->get_orgname() + "]";
+                str = "G0[" + std::string(b->get_driver()->get_orgname()) + " + 1] - G0[" + b->get_driver()->get_orgname() + "]";
                 Body.push(str.c_str());
                 break;      
         case GM_BLTIN_NODE_IN_DEGREE: 
-                str = "G[0][" + std::string(b->get_driver()->get_orgname()) + " + 1] - G[0][" + b->get_driver()->get_orgname() + "]";
+                str = "G0[" + std::string(b->get_driver()->get_orgname()) + " + 1] - G0[" + b->get_driver()->get_orgname() + "]";
                 Body.push(str.c_str());
                 break;   
         case GM_BLTIN_NODE_TO_EDGE: 
@@ -1851,17 +1851,39 @@ void gm_cuda_gen::generateMacroDefine(scope* s) {
         str = "cudaError_t err;";
         Body.push(str.c_str());
         Body.pushln("  \\");
+        Body.pushln("cudaEvent_t start, stop;");
+        Body.pushln("float elapsedTime;");
+        Body.pushln("int gm_blockSize;   /* The launch configurator returned block size*/ \\");
+        Body.pushln("int gm_minGridSize; /* The minimum grid size needed to achieve the*/ \\");
+        Body.pushln("           /* maximum occupancy for a full device launch*/ \\");
+        Body.pushln("int gm_gridSize;    /* The actual grid size needed, based on input size*/ \\");
+        Body.pushln("int gm_numBlocksStillToProcess, gm_offsetIntoBlocks; \\");
+        Body.pushln("int gm_numBlocksKernelParameter; \\");
+
     }
     printingMacro = false;
     Body.pushln(" ");
     
     if (s == globalScope) {
+        Body.pushln("#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }");
+        Body.pushln("inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true) {");
+        Body.pushln("if (code != cudaSuccess) {");
+        Body.pushln("fprintf(stderr,\"GPUassert: %s %s %d\\n\", cudaGetErrorString(code), file, line);");
+        Body.pushln("if (abort) exit(code);");
+        Body.pushln("}");
+        Body.pushln("}");
+        Body.pushln("");
+ 
         Body.pushln("#define CUDA_ERR_CHECK  \\");
-        Body.pushln("if( err != cudaSuccess) { \\");
-        Body.pushln("printf(\"CUDA error: %s ** at Line %d\\n\", cudaGetErrorString(err), __LINE__); \\");
+        Body.pushln("gpuErrchk(cudaPeekAtLastError());\\");
+        Body.pushln("gpuErrchk(cudaDeviceSynchronize());\\");
+        Body.pushln("");
+
+/*        Body.pushln("if( err != cudaSuccess) { \\");
+        Body.pushln("printf(\"CUDA error: %s ** at Line %d in file %s\\n\", cudaGetErrorString(err), __LINE__, __FILE__); \\");
         Body.pushln("    return EXIT_FAILURE; \\");
         Body.pushln("}\\");
-        Body.pushln(" ");
+        Body.pushln(" ");*/
     }
     Body.flush();
     Body = *tempBody;
@@ -2145,6 +2167,8 @@ void gm_cuda_gen::generate_sent_foreach(ast_foreach* i) {
         newScope->setParentScope(getCurrentScope());
         newScope->setGPUScope(getGPUScope());
         setCurrentScope(newScope);
+        addToKernelScopes(newScope);
+
         callStr = generate_newKernelFunction(i);
     }
 
@@ -2170,6 +2194,10 @@ void gm_cuda_gen::generate_sent_foreach(ast_foreach* i) {
         Body = *tempBody;
         Body.push(callStr.c_str());
 
+        Body.pushln("CUDA_ERR_CHECK;");
+        Body.pushln("gm_numBlocksStillToProcess -= gm_minGridSize;"); 
+        Body.pushln("gm_offsetIntoBlocks += gm_minGridSize * gm_blockSize;");
+        Body.pushln("}");
         std::list<scope_entry*>varList = currentScope->getScopeEntries();
         std::list<scope_entry*>::iterator varListIt = varList.begin();
         for (; varListIt != varList.end(); varListIt++) {
@@ -2191,10 +2219,15 @@ void gm_cuda_gen::generate_CudaAssignForIterator(ast_id* iter, bool isParallel) 
 
     symbol* iterSym = transfer.findSymbol(iter->get_orgname());
     if (isParallel) {
-        Body.pushln("int tId = blockIdx.x * blockDim.x + threadIdx.x;");
+        Body.pushln("int tId = blockIdx.x * blockDim.x + threadIdx.x + gm_offsetIntoBlocks;");
         iterSym->setSymbolParallelIterator(true);
         iterSym->getIndexParallel();
-        std::string str = /*iterSym->getIteratorTypeString() + " " +*/ iterSym->getName();
+        std::string str = "if (tId >= " + iterSym->getNumOfThreads() + ") {";
+        Body.pushln(str.c_str());
+        str = "return;";
+        Body.pushln(str.c_str());
+        Body.pushln("}");
+        str = /*iterSym->getIteratorTypeString() + " " +*/ iterSym->getName();
         str = str + " = ";
         str = str + iterSym->getCodeGenName() + ";\n";
         Body.push(str.c_str());
@@ -2204,16 +2237,16 @@ void gm_cuda_gen::generate_CudaAssignForIterator(ast_id* iter, bool isParallel) 
         std::string str = std::string("for (") + iterSym->getIteratorTypeString() + " iter" + /*iterSym->getName() +*/ " = " + iterSym->startIndexStr + ", ";
         str += iterSym->getName() + std::string(" = ");
         if (gm_is_any_neighbor_node_iteration(iterSym->getSymbolIterType()))
-            str += "G[1][iter]; ";
+            str += "G1[iter]; ";
         else if (gm_is_any_neighbor_edge_iteration(iterSym->getSymbolIterType()))
-            str += "G[1][iter]; ";
+            str += "G1[iter]; ";
         str += std::string("iter") + /*iterSym->getName() +*/ " != " + iterSym->endIndexStr + "; iter" + /*iterSym->getName() +*/ "++, ";
         
         str += iterSym->getName() + std::string(" = ");
         if (gm_is_any_neighbor_node_iteration(iterSym->getSymbolIterType()))
-            str += "G[1][iter]";
+            str += "G1[iter]";
         else if (gm_is_any_neighbor_edge_iteration(iterSym->getSymbolIterType()))
-            str += "G[1][iter]";
+            str += "G1[iter]";
         str += ") ";
 
         Body.push(str.c_str());
@@ -2226,9 +2259,23 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
     char temp[1024];
     sprintf(temp, "%d", forLoopId);
     std::string str = "__global__ void forEachKernel" + std::string(temp) + std::string(" (");
-    std::string callStr = "forEachKernel" + std::string(temp) + std::string("<<<");
+    std::string callStr;
     symbol* iterSym = transfer.findSymbol(f->get_iterator()->get_orgname());
-    callStr = callStr + iterSym->getNumOfThreads() + ", " + "1024>>>(";
+
+    callStr = "cudaOccupancyMaxPotentialBlockSize(&gm_minGridSize, &gm_blockSize,";
+    callStr += "forEachKernel" + std::string(temp) + ", 0, 0);\n";
+    // Round up according to array size
+    callStr += "gm_gridSize = (" + iterSym->getNumOfThreads() + " + gm_blockSize - 1) / gm_blockSize;\n";
+
+    callStr += "gm_numBlocksStillToProcess = gm_gridSize, gm_offsetIntoBlocks = 0;\n";
+    callStr += "while (gm_numBlocksStillToProcess > 0) {\n";
+    callStr += "if (gm_numBlocksStillToProcess > gm_minGridSize)\n";
+    callStr += "    gm_numBlocksKernelParameter = gm_minGridSize;\n";
+    callStr += "else\n";
+    callStr += "    gm_numBlocksKernelParameter = gm_numBlocksStillToProcess;\n";
+ 
+    callStr += "forEachKernel" + std::string(temp) + std::string("<<<");
+    callStr += "gm_numBlocksKernelParameter, gm_blockSize>>>(";
 
     Body.indent = 0;
     Body.push(str.c_str());
@@ -2266,11 +2313,13 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
                 sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
                 callStr.append(id->get_orgname());
             }else if (type->is_graph()) {
-                sprintf(temp, "int *%s[2]", id->get_orgname());
+                sprintf(temp, "int *%s0, int *%s1", id->get_orgname(), id->get_orgname());
                 Body.push(temp);
                 Body.push(", int NumNodes, int NumEdges");
                 callStr.append(id->get_orgname());
-                callStr.append(", NumNodes, NumEdges");
+                callStr.append("0, ");
+                callStr.append(id->get_orgname());
+                callStr.append("1, NumNodes, NumEdges");
                 continue;
             }else if (type->is_property()) {
                 ast_typedecl* targetType = type->get_target_type();
@@ -2278,7 +2327,7 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
                 callStr.append(id->get_orgname());
             }else if (type->is_nodeedge()) {
 
-                sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+                sprintf(temp, "int %s", id->get_orgname());
                 callStr.append(id->get_orgname());
             }else if (type->is_collection()) {
 
@@ -2321,6 +2370,7 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
             }
         }
     }
+    Body.push(", int gm_offsetIntoBlocks");
     Body.push(") {\n");
     
     // Generate Macro for declaration of local variables for the kernel
@@ -2331,6 +2381,7 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
     str = str + ";";
     Body.pushln(str.c_str());
 
+    callStr.append(", gm_offsetIntoBlocks");
     callStr.append(");\n");
     return callStr;
 }
@@ -2505,7 +2556,9 @@ void gm_cuda_gen::generate_idlist(ast_idlist* idl) {
         ast_id* id = idl->get_item(i);
         generate_lhs_id(id);
         if (id->getTypeInfo()->is_graph()) {
-            Body.push_spc("[2]");
+            Body.push_spc("0, *");
+            generate_lhs_id(id);
+            Body.push_spc("1");
             Body.push_spc(", NumNodes");
             Body.push_spc(", NumEdges");
         }
@@ -2634,13 +2687,13 @@ void gm_cuda_gen::generate_kernel_function(ast_procdef* proc) {
 
                 sprintf(temp, "%s %s", get_type_string(type->get_typeid()), id->get_orgname());
             }else if (type->is_graph()) {
-                sprintf(temp, "int* %s[2]", id->get_orgname());
+                sprintf(temp, "int* %s0, int* %s1", id->get_orgname(), id->get_orgname());
             }else if (type->is_property()) {
                 ast_typedecl* targetType = type->get_target_type();
                 sprintf(temp, "%s * %s", get_type_string(targetType->get_typeid()), id->get_orgname());
             }else if (type->is_nodeedge()) {
 
-                sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+                sprintf(temp, "int %s", id->get_orgname());
             }else if (type->is_collection()) {
 
                 sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
@@ -2694,8 +2747,8 @@ void gm_cuda_gen::CUDAAllocateMemory(ast_vardecl* varDecl, bool onHost) {
         if (varId->getTypeInfo()->is_graph()) {
             str += std::string(varId->get_orgname());
             str2 = str;
-            str += "[0]";
-            str2 += "[1]";
+            str += "0";
+            str2 += "1";
             str += ", (NumNodes + 2) * sizeof(int));";
             str2 += ", (NumEdges + 1) * sizeof(int));";
             Body.pushln(str.c_str());
@@ -2703,7 +2756,7 @@ void gm_cuda_gen::CUDAAllocateMemory(ast_vardecl* varDecl, bool onHost) {
             Body.pushln(str2.c_str());
             Body.pushln(errCheck.c_str());
         } else {
-            str += std::string(varId->get_orgname()) + ", " + getSizeOfVariable(varId) + " * ";
+            str += std::string(varId->get_orgname()) + ", (" + getSizeOfVariable(varId) + " + 1) * ";
             str += std::string("sizeof(");
             if (varType->is_property()) {
                 str += get_type_string(varType->get_target_type());
@@ -2804,6 +2857,7 @@ void gm_cuda_gen::CUDAMemcpy(ast_id* dst, ast_id* dstOffset, std::string src, st
         str += "cudaMemcpyDeviceToHost";
     str += ");";
     Body.pushln(str.c_str());
+    Body.pushln("CUDA_ERR_CHECK;");
 }
 
 void gm_cuda_gen::do_generate_user_main() {
@@ -2827,6 +2881,10 @@ void gm_cuda_gen::do_generate_user_main() {
     Body.pushln("}");
     Body.pushln("inputFile >> NumNodes >> NumEdges;");
 
+    Body.pushln("cudaEventCreate(&start)");
+    Body.pushln("cudaEventCreate(&stop)");
+    Body.pushln("cudaEventRecord(&start, 0)");
+
     assert(FE.get_all_procs().size() == 1);
 
     std::list<ast_vardecl*>GPUVarList = getGPUScope()->getVarDecls();
@@ -2842,13 +2900,21 @@ void gm_cuda_gen::do_generate_user_main() {
          I != GPUVarList.end(); I++) {
         CUDAAllocateMemory(*I, false);
     }
-
+    
+    int defaultNumBlocks = 10000;
     std::string str = "bool* host_threadBlockBarrierReached;";
     str = "err = cudaMalloc((void **)&host_threadBlockBarrierReached, ";
-    str += "(NumNodes / 1024 + 1) * sizeof(bool));";
+    str += "10000 * sizeof(bool));";
     Body.pushln(str.c_str());
     str = "CUDA_ERR_CHECK;";
     Body.pushln(str.c_str());
+
+    str = "err = cudaMemset(host_threadBlockBarrierReached, ";
+    str += "0x0, 10000 * sizeof(bool));";
+    Body.pushln(str.c_str());
+    str = "CUDA_ERR_CHECK;";
+    Body.pushln(str.c_str());
+
     str = "err = cudaMemcpyToSymbol(gm_threadBlockBarrierReached, ";
     str += "&host_threadBlockBarrierReached, sizeof(bool *), 0, ";
     str += "cudaMemcpyHostToDevice);";
@@ -2860,6 +2926,12 @@ void gm_cuda_gen::do_generate_user_main() {
     Body.pushln("printf(\"Graph Population began\\n\");");
     Body.pushln("populate(argv[1], h_G);");
     Body.pushln("printf(\"Graph Population end\\n\");");
+
+    Body.pushln("cudaEventRecord(&stop, 0)");
+    Body.pushln("cudaEventSynchronize(stop);");
+    Body.pushln("cudaEventElapsedTime(&elapsedTime, start, stop);");
+    Body.pushln("printf(\"Loading time(milliseconds)  = %f\\n\", elapsedTime)");
+
 
     ast_procdef* proc = FE.get_all_procs()[0];
     ast_typedecl* ret_type = proc->get_return_type();
@@ -2874,6 +2946,9 @@ void gm_cuda_gen::do_generate_user_main() {
     for(I=Out.begin(); I!= Out.end(); I++) {
        print_declare_argument(Body, *I, false, true);
     }*/
+    Body.pushln("cudaEventCreate(&start)");
+    Body.pushln("cudaEventCreate(&stop)");
+    Body.pushln("cudaEventRecord(&start, 0)");
     if (!ret_type->is_void()) {
         assert((ret_type->is_nodeedge()) || (ret_type->is_primitive()));
         str = get_type_string(ret_type);
@@ -2907,7 +2982,7 @@ void gm_cuda_gen::do_generate_user_main() {
 
                 sprintf(temp, "%s", id->get_orgname());
             }else if (type->is_graph()) {
-                sprintf(temp, "%s", id->get_orgname());
+                sprintf(temp, "%s0, %s1", id->get_orgname(), id->get_orgname());
             }else if (type->is_property()) {
                 sprintf(temp, "%s", id->get_orgname());
             }else if (type->is_nodeedge()) {
@@ -2934,7 +3009,21 @@ void gm_cuda_gen::do_generate_user_main() {
     Body.pushln("}");
 
     Body.pushln("return EXIT_SUCCESS;");*/
+    
+    Body.pushln("cudaEventRecord(&stop, 0)");
+    Body.pushln("cudaEventSynchronize(stop);");
+    Body.pushln("cudaEventElapsedTime(&elapsedTime, start, stop);");
+    Body.pushln("printf(\"Execution time(milliseconds)  = %f\\n\", elapsedTime)");
+    
     if (!ret_type->is_void()) {
+        int returnTypeId = ret_type->get_typeid();
+        Body.push("printf(\"Return value = ");
+        if (gm_is_boolean_type(returnTypeId) || gm_is_integer_type(returnTypeId)) {
+            Body.push("%d");
+        } else if (gm_is_float_type(returnTypeId)) {
+            Body.push("%f");
+        }
+        Body.push("\\n\", MainReturn);");
         Body.pushln("return MainReturn;");
     }
     Body.pushln("}");

@@ -69,6 +69,7 @@ protected:
     scope* currentScope;
     scope* globalScope;
     scope* GPUMemoryScope;
+    std::list<scope*> kernelScopes;
     bool printingMacro;
 
     bool open_output_files();
@@ -167,6 +168,11 @@ public:
 
     virtual void setGPUScope(scope* s) {
         GPUMemoryScope = s;
+    }
+
+    virtual std::list<scope*> getKernelScopes() {   return kernelScopes;}
+    virtual void addToKernelScopes(scope *c) {
+        kernelScopes.push_back(c);
     }
 };
 
