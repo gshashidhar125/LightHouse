@@ -63,6 +63,8 @@ apps/src/*.cc
 apps/src/*.cpp
 apps/src/*.cu
 apps/src/*.h
+apps/src/*compile.mk
+apps/src/temp*/
 
 etc/update_setup
 setup.mk.bak

@@ -148,6 +148,7 @@ public:
     void CUDAMemcpyToSymbol(ast_node* n);
     void CUDAMemcpyFromSymbol(ast_node* n);
     void CUDAMemcpy(ast_id* dst, ast_id* dstOffset, std::string src, std::string typeString, bool isHostToDevice);
+    void CUDAFree(ast_vardecl* varDecl, bool isHost);
     void do_generate_user_main();
     std::string getSizeOfVariable(ast_id* i);
 
