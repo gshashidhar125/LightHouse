@@ -1,0 +1,14 @@
+    Graph                       GM_CUDA                       GM_OpenMP_1T      GM_OPENMP_4T    GM_OPENMP_8T
+1. soc-Epinions1            LoadingTime(ms) = 139.910751        1079.167
+    NumNodes = 75887        ExecutionTime(ms) = 9674.443359     440.613
+    NumEdges = 508837       Return Value = Verified
+
+2. twitter_combined         LoadingTime(ms) = 4464.799316       92531.734
+    NumNodes = 568770231    ExecutionTime(ms) = 3178.730469     1786.958
+    NumEdges = 2420766      StoringTime(ms) =                   911208.559
+                            Return Value = Verified
+
+3. soc-LiveJournal1         LoadingTime(ms) = 19266.867188      87104.857       87856.368       87769.815
+    NumNodes = 4847570      ExecutionTime(ms) = 1192.030640     1346.524        1078.071        623.427
+    NumEdges = 68993773     StoringTime(ms) =                   7521.124        7340.800        6904.545
+                            Return Value = Verified

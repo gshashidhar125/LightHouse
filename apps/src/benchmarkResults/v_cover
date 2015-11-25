@@ -1,0 +1,4 @@
+    Graph                       GM_CUDA                    GM_OpenMP_1T
+1. soc-Epinions1        LoadingTime(ms) = 28301.527344      
+    NumNodes = 75887    ExecutionTime(ms) = 641975.0625
+    NumEdges = 508837   Return Value = 62833

@@ -99,9 +99,9 @@ public:
 
 /*    virtual void generate_expr_list(std::list<ast_expr*>& L);
     virtual void generate_expr(ast_expr* e);
-    virtual void generate_expr_val(ast_expr* e);
+    virtual void generate_expr_val(ast_expr* e);*/
     virtual void generate_expr_inf(ast_expr* e);
-    virtual void generate_expr_uop(ast_expr* e);
+/*    virtual void generate_expr_uop(ast_expr* e);
     virtual void generate_expr_ter(ast_expr* e);
     virtual void generate_expr_bin(ast_expr* e);
     virtual void generate_expr_comp(ast_expr* e);

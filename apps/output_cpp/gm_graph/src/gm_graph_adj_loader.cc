@@ -249,7 +249,8 @@ bool gm_graph::store_adjacency_list (const char* filename, // input parameter
             storeValueBasedOnType (vertex_props[j], i, writer, vprop_schema[j]);
         }
 
-        for (edge_t j = this->begin[i]; j < this->begin[i+1]; ++j) {
+// Edge List is not necessary in the output.
+/*        for (edge_t j = this->begin[i]; j < this->begin[i+1]; ++j) {
             // For each edge, write its destination vertex's id
             writer.write(separators);
             writer.write(nodeid_to_nodekey(this->node_idx[j]));
@@ -258,7 +259,7 @@ bool gm_graph::store_adjacency_list (const char* filename, // input parameter
                 writer.write(separators);
                 storeValueBasedOnType (edge_props[k], j, writer, eprop_schema[k]);
             }
-        }
+        }*/
         writer.write("\n");
         writer.flush();
     }

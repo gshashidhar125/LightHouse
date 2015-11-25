@@ -1765,11 +1765,35 @@ void gm_cuda_gen::generate_expr(ast_expr* e) {
 }
 
 void gm_cuda_gen::generate_expr_val(ast_expr* e) {
-}
+}*/
 
 void gm_cuda_gen::generate_expr_inf(ast_expr* e) {
-}
 
+    char* temp = temp_str;
+    assert(e->get_opclass() == GMEXPR_INF);
+    int t = e->get_type_summary();
+    switch (t) {
+        case GMTYPE_INF:
+        case GMTYPE_INF_INT:
+            sprintf(temp, "%s", e->is_plus_inf() ? "99999" : "0"); // temporary
+            break;
+        case GMTYPE_INF_LONG:
+            sprintf(temp, "%s", e->is_plus_inf() ? "LLONG_MAX" : "LLONG_MIN"); // temporary
+            break;
+        case GMTYPE_INF_FLOAT:
+            sprintf(temp, "%s", e->is_plus_inf() ? "FLT_MAX" : "FLT_MIN"); // temporary
+            break;
+        case GMTYPE_INF_DOUBLE:
+            sprintf(temp, "%s", e->is_plus_inf() ? "DBL_MAX" : "DBL_MIN"); // temporary
+            break;
+        default:
+            sprintf(temp, "%s", e->is_plus_inf() ? "99999" : "0"); // temporary
+            break;
+    }
+    _Body.push(temp);
+    return;
+}
+/*
 void gm_cuda_gen::generate_expr_uop(ast_expr* e) {
 }
 
@@ -1930,6 +1954,76 @@ void gm_cuda_gen::generate_sent_reduce_assign(ast_assign* i) {
         Body.pushln(");");
     } else {
         std::string str;
+        std::list<ast_node*>::iterator IStart = i->get_lhs_list().begin();
+        std::list<ast_node*>::iterator IEnd = i->get_lhs_list().end();
+        bool isBooleanReduction = false;
+        for (; IStart != IEnd; IStart++) {
+            if ((*IStart)->get_nodetype() == AST_FIELD) {
+                ast_field* targetField = (ast_field*)*IStart;
+                if (gm_is_boolean_type(targetField->getTargetTypeSummary())) {
+                    isBooleanReduction = true;
+                }
+            }
+        }
+        // For SSSP boolean multiple reduction
+        if (isBooleanReduction) {
+            Body.push("localExpr = ");
+            generate_lhs_field(i->get_lhs_field());
+            Body.pushln(";");
+            ast_id* localExpr = ast_id::new_id("localExpr", 0, 1);
+            currentScope->addVariableToScope(localExpr, i->get_rhs()->get_type_summary());
+            
+            Body.push("expr = ");
+            ast_id* newId = ast_id::new_id("expr", 0, 1);
+            // TODO: Get right symtab info
+            ast_typedecl* newType = getNewTypeDecl(i->get_rhs()->get_type_summary());
+            currentScope->addVariableToScope(newId, i->get_rhs()->get_type_summary());
+            generate_expr(i->get_rhs());
+            Body.pushln(";");
+
+            Body.push(getAtomicUpdateInst(i->get_reduce_type()).c_str());
+            Body.push("(&");
+            if (i->is_target_scalar()) {
+                generate_lhs_id(i->get_lhs_scala());
+            } else {
+                generate_lhs_field(i->get_lhs_field());
+            }
+            Body.push(", ");
+            Body.push("expr");
+            Body.pushln(");");
+
+            
+            Body.push("if (localExpr ");
+            // TODO
+            //str = getNewVariable(integer, "localExpr");
+            if (i->get_reduce_type() == GMREDUCE_MAX) {
+                Body.push("<= ");
+                currentScope->setLocalExprValue(2);
+            }
+            else if (i->get_reduce_type() == GMREDUCE_MIN) {
+                Body.push("> ");
+                currentScope->setLocalExprValue(5);
+            }
+            else
+                assert(false);
+
+            Body.pushln("expr) {");
+
+            std::list<ast_node*>::iterator lhsListIt = i->get_lhs_list().begin();
+            std::list<ast_expr*>::iterator rhsListIt = i->get_rhs_list().begin();
+            std::list<ast_node*>::iterator lhsListEnd = i->get_lhs_list().end();
+            std::list<ast_expr*>::iterator rhsListEnd = i->get_rhs_list().end();
+            for (; (lhsListIt != lhsListEnd) && 
+                    (rhsListIt != rhsListEnd); 
+                    lhsListIt++, rhsListIt++) {
+                generate_lhs_field((ast_field*)*lhsListIt);
+                Body.push(" = ");
+                generate_expr(*rhsListIt);
+                Body.pushln(";");
+            }
+            Body.pushln("}");
+            return;
+        }
         // TODO
         //str = getNewVariable(integer, "expr");
         Body.push("expr = ");
@@ -3128,6 +3222,10 @@ void gm_cuda_gen::do_generate_user_main() {
          I != GPUVarList.end(); I++) {
         CUDAFree(*I, false);
     }
+    str = "err = cudaFree(host_threadBlockBarrierReached);";
+    Body.pushln(str.c_str());
+    str = "CUDA_ERR_CHECK;";
+    Body.pushln(str.c_str());
     
     Body.pushln("free(h_G[0]);");
     Body.pushln("free(h_G[1]);");
