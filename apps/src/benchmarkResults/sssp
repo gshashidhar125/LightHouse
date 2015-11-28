@@ -1,14 +1,31 @@
-    Graph                       GM_CUDA                       GM_OpenMP_1T      GM_OPENMP_4T    GM_OPENMP_8T
-1. soc-Epinions1            LoadingTime(ms) = 139.910751        1079.167
-    NumNodes = 75887        ExecutionTime(ms) = 9674.443359     440.613
-    NumEdges = 508837       Return Value = Verified
+    Graph                       GM_CUDA                       GM_OpenMP_1T      GM_OPENMP_4T    GM_OPENMP_8T        GM_OPENMP_16T       GM_OPENMP_32T       GM_OPENMP_64T
+1. soc-Epinions1            LoadingTime(ms) = 159.892731        706.504         732.552         673.019             794.110             1230.201            647.170
+    NumNodes = 75887        ExecutionTime(ms) = 13.594624       10.988          6.836           4.063               3.871               593.972             17.509
+    NumEdges = 508837       Return Value = Verified StoreTime   107.823         111.585         116.364             174.521             169.377             213.991
 
-2. twitter_combined         LoadingTime(ms) = 4464.799316       92531.734
-    NumNodes = 568770231    ExecutionTime(ms) = 3178.730469     1786.958
-    NumEdges = 2420766      StoringTime(ms) =                   911208.559
+2. twitter_combined         LoadingTime(ms) = 4464.799316       92531.734       93699.526       83862.735           85661.754           83975.406           83810.404
+    NumNodes = 568770231    ExecutionTime(ms) = 3178.730469     1786.958        2605.790        1947.478            1782.502            1987.633            1806.538
+    NumEdges = 2420766      StoringTime(ms) =                   911208.559      829745.780      823369.602          826721.172          836149.738          834271.581
                             Return Value = Verified
 
-3. soc-LiveJournal1         LoadingTime(ms) = 19266.867188      87104.857       87856.368       87769.815
-    NumNodes = 4847570      ExecutionTime(ms) = 1192.030640     1346.524        1078.071        623.427
-    NumEdges = 68993773     StoringTime(ms) =                   7521.124        7340.800        6904.545
+3. soc-LiveJournal1         LoadingTime(ms) = 19266.867188      87104.857       87856.368       87769.815           91671.224           91451.712       90633.613
+    NumNodes = 4847570      ExecutionTime(ms) = 1192.030640     1346.524        1078.071        623.427             378.231             1289.862        1631.644
+    NumEdges = 68993773     StoringTime(ms) =                   7521.124        7340.800        6904.545            7622.487            8120.202        7837.354
                             Return Value = Verified
+
+4. soc-pokec-relationships: Pokec is the most popular Slovak on-line social network.
+    NumNodes = 1632803      LoadingTime(ms) = 8760.080078       39861.046       38636.627       37863.563           38711.674           38959.661       39637.163
+    NumEdges = 30622564     ExecutionTime(ms) = 422.983185      1073.046        563.072         309.729             183.477             1179.380        815.716
+                            StoringTime(ms) =                   2502.394        2469.580        2473.013            2604.886            2823.946        2487.722
+                            Return Value = Verified 
+    
+5. com-orkut.ungraph        LoadingTime(ms) = 33004.199219      166568.643      160325.523      159664.182          158121.762          159165.998      163238.943
+    NumNodes = 3072626      ExecutionTime(ms) = 2394.630371     3779.410        1315.997        720.798             475.061             1134.203        1739.185
+    NumEdges = 117185083    StoringTime(ms) =                   6337.826        4381.092        4678.349            4624.504            4702.003        5353.522
+                            Return Value = Verified
+
+6. USA_ALL                  LoadingTime(ms) = 19469.068359      Did not         82879.646       82723.613           82828.493           83796.579           82569.028
+    NumNodes = 23947347     ExecutionTime(ms) = 693682.687500   Stop even       1589370.431     1010388.657         614275.430          1217086.930         2367526.252
+    NumEdges = 57708624     StoringTime(ms) =                   after 35        34160.157       35067.857           34142.888           34401.706           34090.794
+                            Return Value = Verified             minutes of
+                                                                CPU Time

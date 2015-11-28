@@ -71,6 +71,7 @@ protected:
     scope* GPUMemoryScope;
     std::list<scope*> kernelScopes;
     bool printingMacro;
+    std::list<int>deviceFunctionsList;
 
     bool open_output_files();
     void close_output_files(bool remove_files = false);
@@ -125,8 +126,8 @@ public:
 
 /*    virtual void generate_sent(ast_sent* a);*/
     virtual void generate_sent_assign(ast_assign* a);
-/*    virtual void generate_sent_if(ast_if* a);
-    virtual void generate_sent_while(ast_while* a);
+    virtual void generate_sent_if(ast_if* a);
+/*    virtual void generate_sent_while(ast_while* a);
     //virtual void generate_sent_block(ast_sentblock *b);
     virtual void generate_sent_block(ast_sentblock* b, bool need_br);*/
     virtual void generate_sent_return(ast_return *r);
@@ -174,6 +175,12 @@ public:
     virtual std::list<scope*> getKernelScopes() {   return kernelScopes;}
     virtual void addToKernelScopes(scope *c) {
         kernelScopes.push_back(c);
+    }
+    virtual void addDeviceFunction(int functionId) {
+        deviceFunctionsList.push_back(functionId);
+    }
+    virtual std::list<int> getDeviceFunctionList() {
+        return deviceFunctionsList;
     }
 };
 

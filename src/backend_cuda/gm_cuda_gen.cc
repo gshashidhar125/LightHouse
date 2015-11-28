@@ -94,9 +94,9 @@ void gm_cuda_gen::do_generate_begin() {
     add_include("stdlib.h", Header);
     add_include("stdint.h", Header);
     add_include("float.h", Header);
-    add_include("limits.h", Header);
-    add_include("cmath", Header);
-    add_include("algorithm", Header);
+    //add_include("limits.h", Header);
+    //add_include("cmath", Header);
+    //add_include("algorithm", Header);
 
     //add_include("cuda/cuda.h", Header);
 
@@ -651,8 +651,13 @@ public:
                     // declarations
                     return;
                 } else {
-                    // The same variable is declared as different type
-                    assert(false);
+                    ast_typedecl* convertedType = getNewTypeDecl((*varDeclIt)->get_type()->get_typeid());
+                    // Check if the type has been converted to primtype for CUDA.
+                    if (convertedType->get_typeid() != varType->get_typeid()) {
+                        // The same variable is declared as different type
+                        assert(false);
+                    }
+                    return;
                 }
             } else if ((*varDeclIt)->get_type()->get_typeid() == varType->get_typeid()) { //&&
                 //       (*varDeclIt).second == currentScope
@@ -1317,6 +1322,7 @@ class findDeviceVariablesInExpr : public gm_apply {
 
 public:
     std::list<ast_id*> deviceVariables;
+    std::list<ast_field*> deviceFields;
     bool insideCudaKernel, printingMacro;
 
     findDeviceVariablesInExpr(bool i, bool j) {
@@ -1327,6 +1333,7 @@ public:
         printingMacro = j;
     }
     std::list<ast_id*> getVars() {  return deviceVariables;}
+    std::list<ast_field*> getFields() {  return deviceFields;}
     bool apply(ast_sent* stmt) {
         if (stmt->get_nodetype() == AST_ASSIGN) {
             ast_assign* assignStmt = (ast_assign*)stmt;
@@ -1337,11 +1344,29 @@ public:
 
     bool apply(ast_id* var) {
         
-        symbol*s = transfer.findSymbol(var->get_orgname());
-        if (!insideCudaKernel && s != NULL && s->getMemLoc() == GPUMemory
-            && !printingMacro) {
-            printf("Var In expr = %s\n", var->get_orgname());
-            deviceVariables.push_back(var);
+        if (var->get_parent()->get_nodetype() == AST_FIELD &&
+            var == ((ast_field*)var->get_parent())->get_second()) {
+            ast_field* parentField = (ast_field*)var->get_parent();
+            //if (var == parentField->get_second()) {
+                ast_id* firstField = parentField->get_first();
+                
+                symbol*s = transfer.findSymbol(firstField->get_orgname());
+                if (!insideCudaKernel && s != NULL && !printingMacro) {
+                    for (std::list<symbol*>::iterator it = s->children.begin(); it !=  s->children.end(); it++) {
+                        if (strcmp((*it)->getName(), var->get_orgname()) == 0) {
+                            printf("Field In expr = %s\n", var->get_orgname());
+                            deviceFields.push_back(parentField);
+                        }
+                    }
+                }
+            //}
+        } else {
+            symbol*s = transfer.findSymbol(var->get_orgname());
+            if (!insideCudaKernel && s != NULL && s->getMemLoc() == GPUMemory
+                && !printingMacro) {
+                printf("Var In expr = %s\n", var->get_orgname());
+                deviceVariables.push_back(var);
+            }
         }
         return true;
     }
@@ -1494,8 +1519,14 @@ void gm_cuda_gen::generate_expr_builtin(ast_expr* i) {
     printf("\nEnded..\n\n");
     ast_expr_builtin* b = (ast_expr_builtin*)i;
     gm_builtin_def* def = b->get_builtin_def();
-    std::string str;
+    std::string str, graphName;
     symbol* iterSym;
+    std::list<ast_expr*>::iterator itStart, itEnd;
+    std::list<ast_argdecl*> inArgs;
+    std::list<ast_argdecl*>::iterator It;
+    ast_typedecl* type;
+    ast_idlist* idlist;
+    ast_id* id;
     switch (def->get_method_id()) {
         case GM_BLTIN_GRAPH_NUM_NODES: 
                 Body.push("NumNodes");
@@ -1526,7 +1557,32 @@ void gm_cuda_gen::generate_expr_builtin(ast_expr* i) {
                 Body.push("BUILTIN7");
                 break; 
         case GM_BLTIN_NODE_HAS_EDGE_TO: 
-                Body.push("BUILTIN8");
+                Body.push("hasEdgeTo(");
+                inArgs = currentProc->get_in_args();
+                for (It = inArgs.begin(); It != inArgs.end(); It++) {
+                    type = (*It)->get_type();
+                    idlist = (*It)->get_idlist();
+                    for (int ii = 0; ii < idlist->get_length(); ii++) {
+                        id = idlist->get_item(ii);
+                        if (type->is_graph()) {
+                            graphName = std::string(id->get_orgname());
+                            break;
+                        }
+                    }
+                }
+                str = graphName + "0, " + graphName + "1, ";
+                Body.push(str.c_str());
+                str = std::string(b->get_driver()->get_orgname()) + ", ";
+                //iterSym = transfer.findSymbol(b->get_driver()->get_orgname());
+                Body.push(str.c_str());
+                itStart = b->get_args().begin();
+                itEnd = b->get_args().end();
+                for (; itStart != itEnd; itStart++) {
+                    //(*itStart)->dump_tree(4);
+                    generate_expr(*itStart);
+                }
+                Body.push(")");
+                addDeviceFunction(GM_BLTIN_NODE_HAS_EDGE_TO);
                 break; 
         case GM_BLTIN_NODE_RAND_NBR: 
                 Body.push("BUILTIN9");
@@ -1661,6 +1717,7 @@ void gm_cuda_gen::generate_expr_nil(ast_expr* i) {
     if(doPrint)
     i->dump_tree(2);
     printf("\nEnded..\n\n");
+    Body.push("-1");
 }
 
 /*void gm_cuda_gen::generate_expr_type_conversion(ast_expr* e) {
@@ -1739,7 +1796,7 @@ const char* gm_cuda_gen::get_type_string(int type_id) {
                 //return "int32_t";
                 return "int";
             case GMTYPE_LONG:
-                return "int64_t";
+                return "unsigned long long int";
             case GMTYPE_FLOAT:
                 return "float";
             case GMTYPE_DOUBLE:
@@ -1775,7 +1832,7 @@ void gm_cuda_gen::generate_expr_inf(ast_expr* e) {
     switch (t) {
         case GMTYPE_INF:
         case GMTYPE_INF_INT:
-            sprintf(temp, "%s", e->is_plus_inf() ? "99999" : "0"); // temporary
+            sprintf(temp, "%s", e->is_plus_inf() ? "2147483647"/*"99999"*/ : "0"); // temporary
             break;
         case GMTYPE_INF_LONG:
             sprintf(temp, "%s", e->is_plus_inf() ? "LLONG_MAX" : "LLONG_MIN"); // temporary
@@ -1913,6 +1970,28 @@ void gm_cuda_gen::generateMacroDefine(scope* s) {
         Body.pushln("    return EXIT_FAILURE; \\");
         Body.pushln("}\\");
         Body.pushln(" ");*/
+
+        std::list<int> funcList = getDeviceFunctionList();
+        std::string str, graphName;
+        for (std::list<int>::iterator funcListIt = funcList.begin(); funcListIt != funcList.end(); funcListIt++) {
+            switch(*funcListIt) {
+
+                case GM_BLTIN_NODE_HAS_EDGE_TO: 
+                    Body.pushln("__device__ bool hasEdgeTo(int* gm_G0, int* gm_G1, int gm_from, int gm_to) {");
+                    
+                    str = "for (int i = gm_G0[gm_from]; i < gm_G0[gm_from + 1]; i++) {";
+                    Body.pushln(str.c_str());
+                    str = "if (gm_G1[i] == gm_to) {";
+                    Body.pushln(str.c_str());
+                    Body.pushln("return true;");
+                    Body.pushln("}");
+
+                    Body.pushln("}");
+                    Body.pushln("return false;");
+                    Body.pushln("}");
+                    break;
+            }
+        }
     }
     Body.flush();
     Body = *tempBody;
@@ -2578,6 +2657,24 @@ void gm_cuda_gen::generate_sent_assign(ast_assign* i) {
         CUDAMemcpyFromSymbol(*I);
     }
 
+    std::list<ast_field*> deviceFields = deviceVarAnalysis.getFields();
+    for (std::list<ast_field*>::iterator I = deviceFields.begin(); I != deviceFields.end(); I++) {
+        if ((*I)->getTypeInfo()->is_graph())
+            continue;
+        ast_field* f = *I;
+        ast_id* id = f->get_first();
+    std::string str = getTempVariable(f->getTargetTypeInfo());
+    str += ";";
+    Body.pushln(str.c_str());
+    str = "err = cudaMemcpy(&" + getTempVariable(f->getTargetTypeInfo()) + ", ";
+    str += std::string(f->get_second()->get_orgname()) + " + " + id->get_orgname() + ", ";
+    str += getSizeOfVariable(f->get_first()) + " * " + std::string("sizeof(");
+    str += get_type_string(f->get_second()->getTargetTypeInfo()) + std::string(")");
+    str += ", cudaMemcpyDeviceToHost";
+    str += ");";
+    Body.pushln(str.c_str());
+    Body.pushln("CUDA_ERR_CHECK;");
+    }
     bool cond = false;
 
     if (i->is_target_scalar()) {
@@ -2634,11 +2731,50 @@ void gm_cuda_gen::generate_sent_assign(ast_assign* i) {
         CUDAMemcpy(f->get_second(), f->get_first(), str, typeString, true);
     }
 }
-/*
+
 void gm_cuda_gen::generate_sent_if(ast_if* i) {
 
-}
+    findDeviceVariablesInExpr deviceVarAnalysis(insideCudaKernel, printingMacro);
+    i->get_cond()->traverse_pre(&deviceVarAnalysis);
+    std::list<ast_id*> deviceVars = deviceVarAnalysis.getVars();
+    for (std::list<ast_id*>::iterator I = deviceVars.begin(); I != deviceVars.end(); I++) {
+        if ((*I)->getTypeInfo()->is_graph())
+            continue;
+        CUDAMemcpyFromSymbol(*I);
+    }
+    _Body.push("if (");
+    generate_expr(i->get_cond());
 
+    _Body.pushln(")");
+    ast_sent *s = i->get_then();
+    if (s->get_nodetype() != AST_SENTBLOCK) {
+        _Body.push_indent();
+    }
+
+    generate_sent(s);
+
+    if (s->get_nodetype() != AST_SENTBLOCK) {
+        _Body.pop_indent();
+    }
+
+    s = i->get_else();
+    if (s == NULL) return;
+
+    _Body.push("else ");
+    if (s->get_nodetype() != AST_IF) {
+        _Body.NL();
+    }
+    if ((s->get_nodetype() != AST_SENTBLOCK) && (s->get_nodetype() != AST_IF)) {
+        _Body.push_indent();
+    }
+
+    generate_sent(s);
+
+    if ((s->get_nodetype() != AST_SENTBLOCK) && (s->get_nodetype() != AST_IF)) {
+        _Body.pop_indent();
+    }
+}
+/*
 void gm_cuda_gen::generate_sent_while(ast_while* i) {
 
 }

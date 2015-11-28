@@ -1,0 +1,40 @@
+    Graph                       GM_CUDA                       GM_OpenMP_1T      GM_OPENMP_4T    GM_OPENMP_8T        GM_OPENMP_16T       GM_OPENMP_32T       GM_OPENMP_64T
+1.  g4_cycle- cyclic graph  LoadingTime(ms) =   0.845184        1.827           10.170          10.033              10.267              160.077             20.961
+    NumNodes = 1000         ExecutionTime(ms) = 0.088480        0.012           0.007           0.010               0.012               19.979              0.180
+    NumEdges = 1000         StoringTime(ms) =                   2.671           1.941           1.995               2.219               2.586               1.874
+                            Return Value = Verified
+
+2.  g3_scc_pool             LoadingTime(ms) = 516.435608        6.663           10.326              10.089          10.290              159.894             11.613
+    NumNodes = 1000         ExecutionTime(ms) = 0.251136        0.166           0.035               0.027           0.028               19.978              0.206
+    NumEdges = 5000         StoringTime(ms) =                   2.562           1.858               1.864           1.847               2.562               2.074
+                            Return Value = Verified
+
+3. g1_large_scc             LoadingTime(ms) = 200.899261        543.902         485.295         495.541             499.646             628.208             554.810
+    NumNodes = 1000         ExecutionTime(ms) = 68287.796875    4721.998        1713.025        1689.936            1770.458            1723.540            1647.236
+    NumEdges = 1000000      StoringTime(ms) =                   1.792           2.611           3.655               3.343               2.369               4.260
+                            Return Value = Verified
+
+
+4. soc-Epinions1            LoadingTime(ms) = 119.558754        365.034         345.220         294.912             344.017             491.169             297.199
+    NumNodes = 75887        ExecutionTime(ms) = 16074.648438    349.603         91.746          70.660              73.189              91.933              75.009
+    NumEdges = 508837       Return Value = Verified             102.372         102.727         112.472             116.809             115.819             106.592
+
+4. soc-LiveJournal1         LoadingTime(ms) = 
+    NumNodes = 4847570      ExecutionTime(ms) =
+    NumEdges = 68993773     StoringTime(ms) =
+                                                
+                            
+5. soc-pokec-relationships: 
+    NumNodes = 1632803      LoadingTime(ms) = 
+    NumEdges = 30622564     ExecutionTime(ms) =
+                            StoringTime(ms) =
+                                                
+6. com-orkut.ungraph        LoadingTime(ms) = 
+    NumNodes = 3072626      ExecutionTime(ms) =
+    NumEdges = 117185083    StoringTime(ms) =
+                                                
+                            
+7. USA_ALL                  LoadingTime(ms) = 
+    NumNodes = 23947347     ExecutionTime(ms) =
+    NumEdges = 57708624     StoringTime(ms) =   
+                                               

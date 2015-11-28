@@ -1,0 +1,9 @@
+Proc conflictTest(G: Graph) : Int
+{
+    N_P<Int> prop;
+    Foreach (I1: G.Nodes) {
+        Foreach (I2: I1.Nbrs) {
+            I1.prop = I1.prop + I2.prop;
+        }
+    }
+}
