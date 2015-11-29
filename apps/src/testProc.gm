@@ -1,0 +1,20 @@
+Procedure Test (G: Graph, 
+    A: N_P<Int>, root: Node, 
+    target: Node) {
+    
+    Bool fin = False;
+    N_P<Bool> selected;
+    G.selected = (G == root) ? True: False;
+    While (!fin) {
+        fin = True;
+        Foreach (n: G.Nodes)(n.selected) {
+            Foreach (s: n.Nbrs) {
+                s.selected = True;
+                s.A = n.A + 1;
+            }
+        }
+        If (target.selected) {
+            fin = True;
+        }
+    }
+}

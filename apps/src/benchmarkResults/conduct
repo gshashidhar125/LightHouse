@@ -1,0 +1,42 @@
+    Graph                       GM_CUDA                       GM_OpenMP_1T      GM_OPENMP_4T    GM_OPENMP_8T        GM_OPENMP_16T       GM_OPENMP_32T       GM_OPENMP_64T
+1.  g4_cycle- cyclic graph  LoadingTime(ms) = 
+    NumNodes = 1000         ExecutionTime(ms) = 
+    NumEdges = 1000         StoringTime(ms) = 
+                            Return Value = Ver
+
+2.  g3_scc_pool             LoadingTime(ms) = 
+    NumNodes = 1000         ExecutionTime(ms) = 
+    NumEdges = 5000         StoringTime(ms) = 
+                            Return Value = Ver
+
+3. g1_large_scc             LoadingTime(ms) = 
+    NumNodes = 1000         ExecutionTime(ms) = 
+    NumEdges = 1000000      StoringTime(ms) = 
+                            Return Value = Ver
+
+
+4. soc-Epinions1            LoadingTime(ms) = 141.002945        629.127         658.135         669.180             694.854             975.653             674.261
+    NumNodes = 75887        ExecutionTime(ms) = 0.721472        0.341           0.233           0.946054            0.192               53.572              0.603
+    NumEdges = 508837       Return Value = Verified             155.555         140.227         145.702             152.712             205.602             155.869
+
+5. soc-LiveJournal1         LoadingTime(ms) = 16262.988281      82251.846       79133.151       77703.692           78173.910           78324.829           77656.749
+    NumNodes = 4847570      ExecutionTime(ms) = 63.198368       49.594          23.292          13.357              10.624              45.040              7.749
+    NumEdges = 68993773     StoringTime(ms) =                   11941.437       11925.535       11920.042           11913.885           12060.319           11943.497
+                            Return Value = verified
+                            
+6. soc-pokec-relationships: 
+    NumNodes = 1632803      LoadingTime(ms) = 7046.394531       35887686        33913.850       35750.036           33691.030           33718.323           33499.396
+    NumEdges = 30622564     ExecutionTime(ms) = 21.495169       16.434          8.531           6.017               3.823               50.834              3.371
+                            StoringTime(ms) =                   4687.819        4566.483        4847.981            4792.145            4656.767            4709.029
+                            Return value = Verified
+
+7. com-orkut.ungraph        LoadingTime(ms) = 29386.783203      150572.897      147056.944      143950.857          141879.858          142645.991          148652.954
+    NumNodes = 3072626      ExecutionTime(ms) = 533.324951      46.202          18.574          9.698               7.272               45.101              4.976
+    NumEdges = 117185083    StoringTime(ms) =                   13595.933       13973.166       13686.112           13701.852           14208.333           14203.155
+                            Return value = Verified
+                                                
+                            
+8. USA_ALL                  LoadingTime(ms) = 19900.292969      89575.034       87848.099       87421.823           87239.528           87481.692           88225.026
+    NumNodes = 23947347     ExecutionTime(ms) = 82.519997       125.401         72.958          46.742              36.997              68.092              33.926
+    NumEdges = 57708624     StoringTime(ms) =                   37731.704       40306.408       42938.175           44513.595           42955.504           42983.536
+                                               

@@ -2540,7 +2540,7 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
 
             if (type->is_primitive()) {
 
-                sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+                sprintf(temp, "%s %s", get_type_string(type), id->get_orgname());
                 callStr.append(id->get_orgname());
             }else if (type->is_graph()) {
                 sprintf(temp, "int *%s0, int *%s1", id->get_orgname(), id->get_orgname());
@@ -2561,7 +2561,7 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
                 callStr.append(id->get_orgname());
             }else if (type->is_collection()) {
 
-                sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+                sprintf(temp, "%s %s", get_type_string(type), id->get_orgname());
                 callStr.append(id->get_orgname());
             }
             Body.push(temp);
@@ -2985,7 +2985,7 @@ void gm_cuda_gen::generate_kernel_function(ast_procdef* proc) {
                 sprintf(temp, "int %s", id->get_orgname());
             }else if (type->is_collection()) {
 
-                sprintf(temp, "%s %s", gm_get_type_string(type->get_typeid()), id->get_orgname());
+                sprintf(temp, "%s %s", get_type_string(type), id->get_orgname());
             }
             Out.push(temp);
         }

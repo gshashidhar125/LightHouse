@@ -1,0 +1,42 @@
+    Graph                       GM_CUDA                       GM_OpenMP_1T      GM_OPENMP_4T    GM_OPENMP_8T        GM_OPENMP_16T       GM_OPENMP_32T       GM_OPENMP_64T
+1.  g4_cycle- cyclic graph  LoadingTime(ms) = 
+    NumNodes = 1000         ExecutionTime(ms) = 
+    NumEdges = 1000         StoringTime(ms) = 
+                            Return Value = Ver
+
+2.  g3_scc_pool             LoadingTime(ms) = 
+    NumNodes = 1000         ExecutionTime(ms) = 
+    NumEdges = 5000         StoringTime(ms) = 
+                            Return Value = Ver
+
+3. g1_large_scc             LoadingTime(ms) = 
+    NumNodes = 1000         ExecutionTime(ms) = 
+    NumEdges = 1000000      StoringTime(ms) = 
+                            Return Value = Ver
+
+
+4. soc-Epinions1            LoadingTime(ms) = 
+    NumNodes = 75887        ExecutionTime(ms) 
+    NumEdges = 508837       Return Value = Ver
+
+5. soc-LiveJournal1         LoadingTime(ms) = 
+    NumNodes = 4847570      ExecutionTime(ms) 
+    NumEdges = 68993773     StoringTime(ms) = 
+                            Return Value = ver
+                            
+6. soc-pokec-relationships: 
+    NumNodes = 1632803      LoadingTime(ms) = 
+    NumEdges = 30622564     ExecutionTime(ms) 
+                            StoringTime(ms) = 
+                            Return value = Ver
+
+7. com-orkut.ungraph        LoadingTime(ms) = 
+    NumNodes = 3072626      ExecutionTime(ms) 
+    NumEdges = 117185083    StoringTime(ms) = 
+                            Return value = Ver
+                                              
+                            
+8. USA_ALL                  LoadingTime(ms) = 
+    NumNodes = 23947347     ExecutionTime(ms) 
+    NumEdges = 57708624     StoringTime(ms) = 
+                                               

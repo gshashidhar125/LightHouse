@@ -1,0 +1,4 @@
+#    Graph       GM_CUDA         GM_OpenMP_1T    GM_OPENMP_4T    GM_OPENMP_8T        GM_OPENMP_16T       GM_OPENMP_32T       GM_OPENMP_64T
+SOC-EPI 13.594624       10.988          6.836           4.063               3.871               593.972             17.509
+sfdge 3178.730469     1786.958        2605.790        1947.478            1782.502            1987.633            1806.538
+
