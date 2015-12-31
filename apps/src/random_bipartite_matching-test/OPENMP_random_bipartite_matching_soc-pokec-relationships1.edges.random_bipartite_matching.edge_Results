@@ -1,0 +1,68 @@
+random_bipartite_matching on OPENMP
+
+Running random_bipartite_matching with 64 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:50114.496 (ms)
+main execution time:  34.931 (ms)
+return value = 629501
+storing time:9725.102 (ms)
+64 threads result = . Status = 0 
+ 
+
+Running random_bipartite_matching with 32 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:50084.796 (ms)
+main execution time: 325.562 (ms)
+return value = 629990
+storing time:10249.786 (ms)
+32 threads result = . Status = 0 
+ 
+
+Running random_bipartite_matching with 16 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:50227.526 (ms)
+main execution time:  36.074 (ms)
+return value = 626189
+storing time:9858.739 (ms)
+16 threads result = . Status = 0 
+ 
+
+Running random_bipartite_matching with 8 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:49903.517 (ms)
+main execution time:  62.645 (ms)
+return value = 625583
+storing time:10856.286 (ms)
+8 threads result = . Status = 0 
+ 
+
+Running random_bipartite_matching with 4 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:50418.559 (ms)
+main execution time: 117.686 (ms)
+return value = 628384
+storing time:9777.775 (ms)
+4 threads result = . Status = 0 
+ 
+
+Running random_bipartite_matching with 1 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:51871.697 (ms)
+main execution time: 273.312 (ms)
+return value = 598012
+storing time:12625.511 (ms)
+1 threads result = . Status = 0 
+ 
+

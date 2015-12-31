@@ -1,0 +1,10 @@
+v_cover on OPENMP
+
+Running v_cover with 8 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+Error in line 2
+8 threads result =  
+ 
+

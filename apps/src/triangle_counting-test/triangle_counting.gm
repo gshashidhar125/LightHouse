@@ -1,0 +1,14 @@
+Procedure triangle_counting(G: Graph): Long
+{
+    // undirected version
+	Long T;
+    T = 0;
+	Foreach(v: G.Nodes) 
+    	Foreach(u: v.Nbrs) (u > v) {
+			Foreach(w: v.Nbrs) (w > u) {
+    			If ((w.HasEdgeTo(u))) 
+       				T += 1;
+            }
+        }
+   	Return T;   
+}

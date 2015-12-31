@@ -1,0 +1,30 @@
+soc-Epinions1.sssp.with_header.edge
+Graph Population began
+Graph Population end
+Loading time(milliseconds)  = 159.511398
+Execution time(milliseconds)  = 10.235232
+Verification Success
+soc-LiveJournal1.sssp.with_header.edge
+Graph Population began
+Graph Population end
+Loading time(milliseconds)  = 19340.039062
+Execution time(milliseconds)  = 642.220459
+Verification Success
+soc-pokec-relationships.with_header.edge
+Graph Population began
+Graph Population end
+Loading time(milliseconds)  = 8533.450195
+Execution time(milliseconds)  = 210.477982
+Verification Success
+com-orkut.ungraph.sssp.with_header.edge
+Graph Population began
+Graph Population end
+Loading time(milliseconds)  = 33405.640625
+Execution time(milliseconds)  = 833.460754
+Verification Success
+USA_ALL.txt.sssp.with_header.edge
+Graph Population began
+Graph Population end
+Loading time(milliseconds)  = 19457.908203
+Execution time(milliseconds)  = 671071.750000
+Verification Success

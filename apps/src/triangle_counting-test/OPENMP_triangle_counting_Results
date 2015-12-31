@@ -1,0 +1,68 @@
+triangle_counting on OPENMP
+
+Running triangle_counting with 1 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 365.034 (ms)
+main execution time: 349.603 (ms)
+return value = 507033
+storing time: 102.372 (ms)
+1 threads result =  
+ 
+
+Running triangle_counting with 4 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 345.220 (ms)
+main execution time:  91.746 (ms)
+return value = 507033
+storing time: 102.727 (ms)
+4 threads result =  
+ 
+
+Running triangle_counting with 8 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 294.912 (ms)
+main execution time:  70.660 (ms)
+return value = 507033
+storing time: 112.472 (ms)
+8 threads result =  
+ 
+
+Running triangle_counting with 16 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 344.017 (ms)
+main execution time:  73.189 (ms)
+return value = 507033
+storing time: 116.809 (ms)
+16 threads result =  
+ 
+
+Running triangle_counting with 32 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 491.169 (ms)
+main execution time:  91.933 (ms)
+return value = 507033
+storing time: 115.819 (ms)
+32 threads result =  
+ 
+
+Running triangle_counting with 64 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 297.199 (ms)
+main execution time:  75.009 (ms)
+return value = 507033
+storing time: 106.592 (ms)
+64 threads result =  
+ 
+

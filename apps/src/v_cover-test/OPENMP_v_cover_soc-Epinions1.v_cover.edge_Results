@@ -1,0 +1,61 @@
+v_cover on OPENMP
+
+Running v_cover with 64 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 643.618 (ms)
+main execution time:19959.578 (ms)
+return value = 75879
+storing time: 292.294 (ms)
+64 threads result = . Status = 0 
+ 
+
+Running v_cover with 32 Threads
+32 threads result = . Status = 137 
+ 
+
+Running v_cover with 16 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 619.752 (ms)
+main execution time:7092.678 (ms)
+return value = 75879
+storing time: 204.413 (ms)
+16 threads result = . Status = 0 
+ 
+
+Running v_cover with 8 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 636.033 (ms)
+main execution time:12002.473 (ms)
+return value = 75879
+storing time: 216.195 (ms)
+8 threads result = . Status = 0 
+ 
+
+Running v_cover with 4 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 622.343 (ms)
+main execution time:21748.959 (ms)
+return value = 75879
+storing time: 219.811 (ms)
+4 threads result = . Status = 0 
+ 
+
+Running v_cover with 1 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 578.648 (ms)
+main execution time:78526.178 (ms)
+return value = 75879
+storing time: 233.721 (ms)
+1 threads result = . Status = 0 
+ 
+

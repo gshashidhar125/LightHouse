@@ -1,0 +1,24 @@
+v_cover on OPENMP
+
+Running v_cover with 32 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 645.639 (ms)
+main execution time:9074.221 (ms)
+return value = 900
+storing time: 103.827 (ms)
+32 threads result =  
+ 
+
+Running v_cover with 64 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time: 419.053 (ms)
+main execution time: 265.687 (ms)
+return value = 900
+storing time:  57.525 (ms)
+64 threads result =  
+ 
+

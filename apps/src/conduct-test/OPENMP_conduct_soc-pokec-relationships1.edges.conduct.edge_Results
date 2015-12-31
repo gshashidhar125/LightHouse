@@ -1,0 +1,68 @@
+conduct on OPENMP
+
+Running conduct with 64 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:33499.396 (ms)
+main execution time:   3.371 (ms)
+return value = 0.950274
+storing time:4709.029 (ms)
+64 threads result = . Status = 0 
+ 
+
+Running conduct with 32 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:33718.323 (ms)
+main execution time:  50.834 (ms)
+return value = 0.950274
+storing time:4656.767 (ms)
+32 threads result = . Status = 0 
+ 
+
+Running conduct with 16 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:33691.030 (ms)
+main execution time:   3.823 (ms)
+return value = 0.950274
+storing time:4792.145 (ms)
+16 threads result = . Status = 0 
+ 
+
+Running conduct with 8 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:35750.036 (ms)
+main execution time:   6.017 (ms)
+return value = 0.950274
+storing time:4847.981 (ms)
+8 threads result = . Status = 0 
+ 
+
+Running conduct with 4 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:33913.850 (ms)
+main execution time:   8.531 (ms)
+return value = 0.950274
+storing time:4566.483 (ms)
+4 threads result = . Status = 0 
+ 
+
+Running conduct with 1 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:35887.686 (ms)
+main execution time:  16.434 (ms)
+return value = 0.950274
+storing time:4687.819 (ms)
+1 threads result = . Status = 0 
+ 
+

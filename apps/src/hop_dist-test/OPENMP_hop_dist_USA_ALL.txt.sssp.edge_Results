@@ -1,0 +1,62 @@
+hop_dist on OPENMP
+
+Running hop_dist with 64 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:70671.102 (ms)
+main execution time:140506.604 (ms)
+storing time:38410.473 (ms)
+64 threads result =  
+ 
+
+Running hop_dist with 32 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:70372.536 (ms)
+main execution time:360730.709 (ms)
+storing time:36136.485 (ms)
+32 threads result =  
+ 
+
+Running hop_dist with 16 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:70150.568 (ms)
+main execution time:124904.370 (ms)
+storing time:39106.609 (ms)
+16 threads result =  
+ 
+
+Running hop_dist with 8 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:70256.215 (ms)
+main execution time:198328.914 (ms)
+storing time:36512.758 (ms)
+8 threads result =  
+ 
+
+Running hop_dist with 4 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:70644.714 (ms)
+main execution time:204877.593 (ms)
+storing time:39606.159 (ms)
+4 threads result =  
+ 
+
+Running hop_dist with 1 Threads
+in_format : EDGE_LIST
+Warning: assuming output is ADJ list
+out_format : ADJ
+loading time:72338.966 (ms)
+main execution time:602906.306 (ms)
+storing time:34564.352 (ms)
+1 threads result =  
+ 
+

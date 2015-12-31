@@ -68,3 +68,11 @@ apps/src/temp*/
 
 etc/update_setup
 setup.mk.bak
+
+compareResultSSSP
+apps/src/conduct-test/conduct
+apps/src/hop_dist-test/hop_dist
+apps/src/random_bipartite_matching-test/random_bipartite_matching
+apps/src/sssp-test/sssp
+apps/src/triangle_counting-test/triangle_counting
+apps/src/v_cover-test/v_cover
