@@ -14,15 +14,16 @@ set style histogram cluster gap 3
 set style fill pattern border -1
 #set style fill solid border -1
 set boxwidth 0.9
-set key font ", 10"
+set key font ", 17"
 #set key width 1
 set key reverse above Left width 1
 set offset -0.3,-0.3,0,0
-set ylabel " Execution Time(milli sec)" font ",12"
+set ylabel " Execution Time(milli sec)" font ",20"
 set xlabel offset 0,-2
 set xtic rotate by -45 scale 0
 #set xlabel "Workloads (#L,#H) "# font ",24"
 #set ytic 2 font ",16"
+set xtics font "Times-Roman, 20" 
 #plot 'immigration.dat' using 6:xtic(1) ti col, '' u 12 ti col, '' u 13 ti col, '' u 14 ti col
 plot 'random_bipartite_matching_plotData' using 2:xtic(1) ti col, '' u 3 ti col, '' u 4 ti col, '' u 5 ti col, '' u 6 ti col, '' u 7 ti col, '' u 8 ti col
 
