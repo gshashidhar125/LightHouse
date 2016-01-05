@@ -370,10 +370,12 @@ public:
                                  // only called for property types
     ast_typedecl* getTargetTypeInfo();
     int getTargetTypeSummary();
+    int initialValue;
 
 private:
     ast_id() :
             ast_node(AST_ID), name(NULL), info(NULL), gen_name(NULL), instant_assignment(false) {
+        initialValue = 0;
     }
 
     ast_id(const char* org, int l, int c) :
@@ -386,6 +388,7 @@ private:
         }
         set_line(l);
         set_col(c);
+        initialValue = 0;
     }
 
 public:
@@ -432,6 +435,10 @@ private:
 public:
     void use_names_from_symbol(); // gm_typecheck.cc
 
+    int getInitialValue() {   return initialValue;  }
+    void setInitialValue(int l) {
+        initialValue = l;
+    }
 };
 
 class ast_idlist: public ast_node

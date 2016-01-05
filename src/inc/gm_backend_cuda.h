@@ -15,7 +15,7 @@ class gm_cuda_gen: public gm_backend, public gm_code_generator {
 
 public:
     gm_cuda_gen() :
-        gm_code_generator(Body)/*, gm_code_generator(cudaBody)*/, fname(NULL), dname(NULL), f_header(NULL), f_body(NULL), f_cudaBody(NULL), insideCudaKernel(false), currentProc(NULL), currentScope(NULL), globalScope(NULL), GPUMemoryScope(NULL), printingMacro(false) {
+        gm_code_generator(Body), fname(NULL), dname(NULL), f_header(NULL), f_body(NULL), f_cudaBody(NULL), insideCudaKernel(false), currentProc(NULL), currentScope(NULL), globalScope(NULL), GPUMemoryScope(NULL), printingMacro(false) {
 
         init();
     }
@@ -96,7 +96,6 @@ public:
     //virtual ast_typedecl* getNewTypeDecl(int typeId);
     virtual void generateMacroDefine(scope* s);
     void markGPUAndCPUGlobal();
-    bool isOnGPUMemory(ast_id* i);
 
 /*    virtual void generate_expr_list(std::list<ast_expr*>& L);
     virtual void generate_expr(ast_expr* e);
@@ -142,7 +141,7 @@ public:
     virtual void generate_idlist_primitive(ast_idlist* idList);
     virtual void generate_lhs_default(int type);
     virtual void generate_proc(ast_procdef* proc);
-    virtual void generate_kernel_function(ast_procdef* proc);
+    virtual void generate_CPUProcess_function(ast_procdef* proc);
     virtual std::string generate_newKernelFunction(ast_foreach* f);
     virtual void generate_CudaAssignForIterator(ast_id* iter, bool isParallel);
     void CUDAAllocateMemory(ast_vardecl* varDecl, bool isHost);
@@ -153,7 +152,7 @@ public:
     void do_generate_user_main();
     std::string getSizeOfVariable(ast_id* i);
 
-    virtual std::string getNewTempVariable(ast_node* n);
+    virtual std::string getLocalVariableFor(ast_node* n);
     virtual std::string getTempVariable(ast_typedecl* varType);
     virtual void setGlobalScope(scope* s) {
         globalScope = s;
