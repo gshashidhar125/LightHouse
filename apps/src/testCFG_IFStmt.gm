@@ -1,0 +1,12 @@
+Procedure Test (G: Graph, 
+    A: N_P<Int>, root: Node) {
+ 
+    N_P<Int> B;
+    Int rootValue;
+    If (rootValue > 10) {
+        rootValue = 3;
+    } Else {
+        rootValue = 1;
+    }
+    rootValue = root.B;
+}

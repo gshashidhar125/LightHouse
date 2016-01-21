@@ -24,6 +24,8 @@ GM_COMPILE_STEP(gm_cuda_opt_select_map_implementation, "Select implementation fo
 GM_COMPILE_STEP(gm_cuda_opt_entry_exit, "Add procedure enter and exit")
 GM_COMPILE_STEP(gm_cuda_opt_debug, "A dummy routine for debug")
 */
+GM_COMPILE_STEP(gm_cuda_opt_dependencyAnalysis, "Generate Dependency(Def/Use) Infomation")
+GM_COMPILE_STEP(gm_cuda_opt_removeAtomicsForBoolean, "Eliminate Boolean atomic reduction instructions")
 //-------------------------------------------
 // [Step 2]
 //   Implement the definition in seperate files

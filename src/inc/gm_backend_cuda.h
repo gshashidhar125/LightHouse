@@ -22,7 +22,7 @@ public:
 
 protected:
     void init() {
-        //init_opt_steps();
+        init_opt_steps();
         init_gen_steps();
         //build_up_language_voca();
         printf("Initialization");
