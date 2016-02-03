@@ -9,11 +9,13 @@
 #include "gm_argopts.h"
 #include "gm_backend_cuda_opt_steps.h"
 #include "gm_ind_opt_steps.h"
+#include <string>
 #include <stack>
 #include <fstream>
 
+using namespace std;
 void gm_cuda_gen::init_opt_steps() {
-    std::list<gm_compile_step*>& LIST = this->opt_steps;
+    list<gm_compile_step*>& LIST = this->opt_steps;
     
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_dependencyAnalysis));
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_removeAtomicsForBoolean));
@@ -43,12 +45,50 @@ bool gm_cuda_gen::do_local_optimize_lib() {
     return 1;//get_lib()->do_local_optimize();
 }
 
+struct compareNodes {
+    bool isSameFieldNames(ast_field* f1, ast_field* f2) {
+        ast_id* id1 = f1->get_first();
+        ast_id* id2 = f2->get_first();
+        if (!(strcmp(id1->get_orgname(), id2->get_orgname()))) {
+            id1 = f1->get_second();
+            id2 = f2->get_second();
+            if (!(strcmp(id1->get_orgname(), id2->get_orgname()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    bool operator() (ast_node*& n1, ast_node*& n2) {
+//    bool sameVariableName(ast_node* n1, ast_node* n2) {
+    
+        if (n1->get_nodetype() != n2->get_nodetype())
+            return false;
+        if (n1->get_nodetype() == AST_ID) {
+            ast_id* id1 = (ast_id*)n1;
+            ast_id* id2 = (ast_id*)n2;
+            return !(strcmp(id1->get_orgname(), id2->get_orgname()));
+        }
+        if (n1->get_nodetype() == AST_FIELD) {
+            return isSameFieldNames((ast_field*)n1, (ast_field*)n2);
+        }
+        return false;
+    }
+};
+
+class Def;
+//typedef map<ast_node*, list<Def *>, compareNodes > mapASTNodeToDefs;
+typedef map<string , list<Def *> > mapVarToDefs;
 class BasicBlock {
 
-    std::list<ast_node*> Nodes;
+    list<ast_node*> Nodes;
     ast_node* startNode, *endNode;
-    std::list<BasicBlock*> succ, pred;
+    list<BasicBlock*> succ, pred;
     int id;
+
+    list<Def*> IN, OUT;
+    list<Def*> gen;
+    mapVarToDefs defsList;
 
 public:
     BasicBlock() : startNode(NULL), endNode(NULL) {
@@ -59,28 +99,37 @@ public:
     int getId() {   return id;  }
     void addSucc(BasicBlock* successor) {
         succ.push_back(successor);
+       successor-> addPred(this);
     }
     void addPred(BasicBlock* predecessor) {
         pred.push_back(predecessor);
     }
-    std::list<BasicBlock*> getSuccList() {
+    list<BasicBlock*> getSuccList() {
         return succ;
     }
-    std::list<BasicBlock*> getPredList() {
+    list<BasicBlock*> getPredList() {
         return pred;
     }
     void addNode(ast_node* n) {
         Nodes.push_back(n);
     }
-    std::list<ast_node*> getNodes() {
+    list<ast_node*> getNodes() {
         return Nodes;
     }
 
-    void dump(std::ofstream &out) {
+    list<Def*> getGenList() {
+        return gen;
+    }
+    mapVarToDefs getVarDefsList() { return defsList;    }
+    void addToGen(ast_node* genVar);
+    void addToDefsList(ast_node* n);
+    void addToDefsList(Def* d);
+
+    void dump(ofstream &out) {
 
         out << getId() << " [label = \"" << getId();
-        std::list<ast_node*> nodeList = this->getNodes();
-        std::list<ast_node*>::iterator nodeListIt = nodeList.begin();
+        list<ast_node*> nodeList = this->getNodes();
+        list<ast_node*>::iterator nodeListIt = nodeList.begin();
         int instrCount = 0;
         for (; nodeListIt != nodeList.end(); nodeListIt++) {
             ast_node* node = *nodeListIt;
@@ -188,10 +237,10 @@ public:
 
 class CFG : public gm_apply {
 
-    std::list<BasicBlock*> BBList;
+    list<BasicBlock*> BBList;
     BasicBlock* startBB, *endBB, *currentBB;
-    std::stack<BasicBlock*> headerList;
-    std::list<ifNodeInfo*> ifNodesStack;
+    stack<BasicBlock*> headerList;
+    list<ifNodeInfo*> ifNodesStack;
     bool startOfElse;
 public:
     CFG() {
@@ -204,9 +253,10 @@ public:
         startOfElse = false;
     }
 
+    BasicBlock* getStartBB() {  return startBB; }
     void setThenBlock(ast_node* ifNode, BasicBlock* t) {
         
-        std::list<ifNodeInfo*>::iterator it = ifNodesStack.begin();
+        list<ifNodeInfo*>::iterator it = ifNodesStack.begin();
         for (; it != ifNodesStack.end(); it++) {
             ifNodeInfo* currentIfNodeInfo = *it;
             if (currentIfNodeInfo->ifNode == ifNode) {
@@ -218,7 +268,7 @@ public:
     
     void addSuccToElseBlock(ast_node* ifNode, BasicBlock* e) {
 
-        std::list<ifNodeInfo*>::iterator it = ifNodesStack.begin();
+        list<ifNodeInfo*>::iterator it = ifNodesStack.begin();
         for (; it != ifNodesStack.end(); it++) {
             ifNodeInfo* currentIfNodeInfo = *it;
             if (currentIfNodeInfo->ifNode == ifNode) {
@@ -241,7 +291,7 @@ public:
                 if (insideSentBlock) {
                     ast_sentblock* elseSentBlock = (ast_sentblock*)(parentIfNode->get_else());
                     if (elseSentBlock != NULL) {
-                        std::list<ast_sent*> elseSentBlockStmtList = elseSentBlock->get_sents();
+                        list<ast_sent*> elseSentBlockStmtList = elseSentBlock->get_sents();
                         ast_node* firstNodeInElseBlock = (ast_node*) (elseSentBlockStmtList.front());
                         if (s == firstNodeInElseBlock) {
                             startOfElse = true;
@@ -331,11 +381,11 @@ public:
     }
 
     void printCFG() {
-        std::ofstream cfgFile;
-        cfgFile.open("cfg.dot", std::ofstream::out);
+        ofstream cfgFile;
+        cfgFile.open("cfg.dot", ofstream::out);
         cfgFile << "strict digraph cfg {\n";
-        std::map<BasicBlock*, bool> printedBlocks;
-        std::list<BasicBlock*> bbList;
+        map<BasicBlock*, bool> printedBlocks;
+        list<BasicBlock*> bbList;
         bbList.push_back(startBB);
         while(!bbList.empty()) {
             BasicBlock* bb = bbList.back();
@@ -344,8 +394,8 @@ public:
                 bb->dump(cfgFile);
                 printedBlocks[bb] = true;
             }
-            std::list<BasicBlock*> succList = bb->getSuccList();
-            std::list<BasicBlock*>::iterator succIt = succList.begin();
+            list<BasicBlock*> succList = bb->getSuccList();
+            list<BasicBlock*>::iterator succIt = succList.begin();
             for (; succIt != succList.end(); succIt++) {
                 BasicBlock* succ = *succIt;
                 printf("%d -> %d\n", bb->getId(), succ->getId());
@@ -359,11 +409,287 @@ public:
     }
 };
 
+class Def {
+    ast_node* node;
+    BasicBlock* enclosingBlock;
+
+public:
+    Def(ast_node* n) : node(n) { 
+        if (!(n->get_nodetype() == AST_ID || n->get_nodetype() == AST_FIELD))
+            assert(false && "Adding variable of different type for the definition");
+        enclosingBlock = NULL;
+    }
+    Def(ast_node* n, BasicBlock* b) : node(n), enclosingBlock(b) {
+        if (!(n->get_nodetype() == AST_ID || n->get_nodetype() == AST_FIELD))
+            assert(false && "Adding variable of different type for the definition");
+    }
+
+    ast_node* getNode() {   return node;    }
+    BasicBlock* getBB() {   return enclosingBlock;  }
+};
+
+void BasicBlock::addToGen(ast_node* genVar) {
+    Def* newDef = new Def(genVar, this);
+    gen.push_front(newDef);
+}
+
+void BasicBlock::addToDefsList(ast_node* n) {
+    Def* newDef = new Def(n, this);
+    string nodeName;
+    if (n->get_nodetype() == AST_ID)
+        nodeName = ((ast_id*)n)->get_orgname();
+    else if (n->get_nodetype() == AST_FIELD) {
+        ast_field* fieldNode = (ast_field*)n;
+        nodeName = fieldNode->get_first()->get_orgname() + string(".") + fieldNode->get_second()->get_orgname();
+    }
+    mapVarToDefs::iterator nodeDefList = defsList.find(nodeName);
+    if (nodeDefList == defsList.end()) {
+        defsList[nodeName].push_back(newDef);
+    } else {
+        (*nodeDefList).second.push_back(newDef);
+    }
+}
+
+void BasicBlock::addToDefsList(Def* newDef) {
+    ast_node* n = newDef->getNode();
+    string nodeName;
+    if (n->get_nodetype() == AST_ID)
+        nodeName = ((ast_id*)n)->get_orgname();
+    else if (n->get_nodetype() == AST_FIELD) {
+        ast_field* fieldNode = (ast_field*)n;
+        nodeName = fieldNode->get_first()->get_orgname() + string(".") + fieldNode->get_second()->get_orgname();
+    }
+    mapVarToDefs::iterator nodeDefList = defsList.find(nodeName);
+    if (nodeDefList == defsList.end()) {
+        defsList[nodeName].push_back(newDef);
+    } else {
+        (*nodeDefList).second.push_back(newDef);
+    }
+}
+
+class Use {
+
+};
+
+typedef pair<ast_foreach*, BasicBlock*> foreachBBPair;
+class DefUseAnalysis : gm_apply {
+
+    CFG* currentCFG;
+
+    BasicBlock* currentBB;
+    list<BasicBlock*> worklist;
+    list<foreachBBPair> foreachToBBMap;
+public:
+    DefUseAnalysis(CFG* c) {
+        set_for_sent(true);
+        set_for_id(false);
+        set_separate_post_apply(true);
+        currentCFG = c;
+        worklist.push_back(currentCFG->getStartBB());
+    }
+
+    bool apply(ast_sent* s) {
+        if (s->get_nodetype() == AST_ASSIGN) {
+            ast_assign* assignSent = (ast_assign*)s;
+
+            if (assignSent->is_reduce_assign()) {
+                ast_id* boundIt = assignSent->get_bound();
+                foreachBBPair pair;
+                bool found = false;
+                for (list<foreachBBPair>::iterator It = foreachToBBMap.begin(); It != foreachToBBMap.end(); It++) {
+                    pair = *It;
+                    if (!strcmp(pair.first->get_iterator()->get_orgname(), boundIt->get_orgname())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    assert(false && "Bounding iterator for the reduction assignment not found");
+
+                BasicBlock* foreachBB = pair.second, *BBAfterForeach = NULL;
+                list<BasicBlock*> succList = foreachBB->getSuccList();
+                /*for (list<BasicBlock*>::iterator It = succList.begin(); It != succList.end(); It++) {
+                    if (foreachBB->getId() < (*It)->getId()) {
+                        if (BBAfterForeach != NULL)
+                            assert(false && "More than one successor for foreach loop");
+                        BBAfterForeach = *It;
+                    }
+                }*/
+                BBAfterForeach = succList.back();
+
+                if (BBAfterForeach == NULL)
+                    assert(false && "Could not find a successor of foreach loop");
+
+                if (assignSent->is_target_scalar()) {
+                    ast_id* target = assignSent->get_lhs_scala();
+                    BBAfterForeach->addToGen(target);
+                } else {
+                    ast_field* targetField = assignSent->get_lhs_field();
+                    BBAfterForeach->addToGen(targetField);
+                }
+                if (assignSent->has_lhs_list() && assignSent->is_argminmax_assign()) {
+                    list<ast_node*> lhsList = assignSent->get_lhs_list();
+                    list<ast_node*>::iterator lhsListIt = lhsList.begin();
+                    for (; lhsListIt != lhsList.end(); lhsListIt++) {
+                        ast_node* targetNode = *lhsListIt;
+                        BBAfterForeach->addToGen(targetNode);
+                    }
+                }
+            } else {
+                Def* newDef;
+                if (assignSent->is_target_scalar()) {
+                    ast_node* targetNode = assignSent->get_lhs_scala();
+                    //newDef = new Def(targetNode, currentBB);
+                    currentBB->addToDefsList(targetNode);
+                } else {
+                    ast_node* targetNode = assignSent->get_lhs_field();
+                    //newDef = new Def(targetNode, currentBB);
+                    currentBB->addToDefsList(targetNode);
+                }
+            }
+
+            /*set_for_id(true);
+            assignSent->get_rhs()->traverse_pre(this);
+            if (assignSent->is_reduce_assign() && assignSent->has_lhs_list() && assignSent->is_argminmax_assign()) {
+                list<ast_expr*> rhsList = assignSent->get_rhs_list();
+                list<ast_expr*>::iterator rhsListIt = rhsList.begin();
+                for (; rhsListIt != rhsList.end(); rhsListIt++) {
+                    ast_expr* rhsExpr = *rhsListIt;
+                    rhsExpr->traverse_pre(this);
+                }
+            }
+            set_for_id(false);*/
+        }
+    }
+
+    bool apply(ast_id* id) {
+        ast_node* parent = id->get_parent();
+        if (parent == NULL)
+            ;
+        if (parent->get_nodetype() == AST_FIELD) {
+            ast_field* fieldNode = (ast_field*)parent;
+            if (fieldNode->get_first() == id) {
+                ; // do Nothing
+            } else if (fieldNode->get_second() == id) {
+                ;
+            }
+        } else if (parent->get_nodetype() == AST_MAPACCESS) {
+            ;
+        } else {
+            ;
+        }
+    }
+
+    void processBlock(BasicBlock* bb) {
+        list<ast_node*> nodeList = bb->getNodes();
+        list<Def*> genList = bb->getGenList();
+        while(!genList.empty()) {
+            Def* genDef = genList.front();
+            genList.pop_front();
+            bb->addToDefsList(genDef);
+        }
+
+        for (list<ast_node*>::iterator nodeListIt = nodeList.begin();
+                nodeListIt != nodeList.end(); nodeListIt++) {
+            ast_node* node = *nodeListIt;
+            currentBB = bb;
+            if (node->get_nodetype() == AST_FOREACH ||
+                node->get_nodetype() == AST_WHILE) {
+                ast_foreach* foreachSent = (ast_foreach*)node;
+                foreachBBPair newForeach(foreachSent, currentBB);
+                foreachToBBMap.push_front(newForeach);
+            } else if (node->get_nodetype() != AST_IF) {
+                node->traverse_pre(this);
+            }
+        }
+    }
+
+    void analyse() {
+
+        map<int, bool> visited;
+        visited[worklist.front()->getId()] = true;
+        while(!worklist.empty()) {
+            BasicBlock* bb = worklist.front();
+            worklist.pop_front();
+            printf("BBNumber : %d\n", bb->getId());
+            processBlock(bb);
+            list<BasicBlock*>succList = bb->getSuccList();
+            for (list<BasicBlock*>::iterator succListIt = succList.begin(); 
+                    succListIt != succList.end(); succListIt++) {
+                BasicBlock* succBB = *succListIt;
+                {
+                    // Insert the New Basic Block into the sorted Linked list.
+                    bool isFound = false;
+                    list<BasicBlock*>::iterator worklistIt = worklist.begin();
+                    for (; worklistIt != worklist.end(); worklistIt++) {
+                        BasicBlock* itBB = *worklistIt;
+                        if (itBB->getId() > succBB->getId())
+                            break;
+                        if (itBB->getId() == succBB->getId()) {
+                            isFound = true;
+                            break;
+                        }
+                    }
+                    if (!isFound && (visited.find(succBB->getId()) == visited.end())) {
+                        worklist.insert(worklistIt, succBB);
+                        visited[succBB->getId()] = true;
+                    }
+                }
+            }
+        }
+    }
+    void print() {
+        
+        map<int, bool> visited;
+        worklist.push_back(currentCFG->getStartBB());
+        visited[worklist.front()->getId()] = true;
+        while(!worklist.empty()) {
+            BasicBlock* bb = worklist.front();
+            worklist.pop_front();
+            printf("BBNumber : %d\n", bb->getId());
+
+            mapVarToDefs varDefs = bb->getVarDefsList();
+            mapVarToDefs::iterator varDefIt = varDefs.begin();
+            for (; varDefIt != varDefs.end(); varDefIt++) {
+                printf("Var: %s. ", (*varDefIt).first.c_str());
+            }
+
+            list<BasicBlock*>succList = bb->getSuccList();
+            for (list<BasicBlock*>::iterator succListIt = succList.begin(); 
+                    succListIt != succList.end(); succListIt++) {
+                BasicBlock* succBB = *succListIt;
+                {
+                    // Insert the New Basic Block into the sorted Linked list.
+                    bool isFound = false;
+                    list<BasicBlock*>::iterator worklistIt = worklist.begin();
+                    for (; worklistIt != worklist.end(); worklistIt++) {
+                        BasicBlock* itBB = *worklistIt;
+                        if (itBB->getId() > succBB->getId())
+                            break;
+                        if (itBB->getId() == succBB->getId()) {
+                            isFound = true;
+                            break;
+                        }
+                    }
+                    if (!isFound && (visited.find(succBB->getId()) == visited.end())) {
+                        worklist.insert(worklistIt, succBB);
+                        visited[succBB->getId()] = true;
+                    }
+                }
+            }
+        }
+    }
+};
+
 void gm_cuda_opt_dependencyAnalysis::process(ast_procdef* proc) {
 
     CFG currentCFG;
     proc->traverse_both(&currentCFG);
     currentCFG.printCFG();
+    DefUseAnalysis analysis(&currentCFG);
+    analysis.analyse();
+    analysis.print();
+    //proc->traverse_pre(&analysis);
 }
 
 class gm_identifyBooleanReduction : public gm_apply {
