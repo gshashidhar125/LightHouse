@@ -87,7 +87,6 @@ class BasicBlock {
     int id;
 
     list<Def*> IN, OUT;
-    list<Def*> gen;
     mapVarToDefs defsList;
 
 public:
@@ -117,13 +116,10 @@ public:
         return Nodes;
     }
 
-    list<Def*> getGenList() {
-        return gen;
-    }
     mapVarToDefs getVarDefsList() { return defsList;    }
-    void addToGen(ast_node* genVar);
     void addToDefsList(ast_node* n);
     void addToDefsList(Def* d);
+    void propogateDefs(BasicBlock* succ);
 
     void dump(ofstream &out) {
 
@@ -428,11 +424,6 @@ public:
     BasicBlock* getBB() {   return enclosingBlock;  }
 };
 
-void BasicBlock::addToGen(ast_node* genVar) {
-    Def* newDef = new Def(genVar, this);
-    gen.push_front(newDef);
-}
-
 void BasicBlock::addToDefsList(ast_node* n) {
     Def* newDef = new Def(n, this);
     string nodeName;
@@ -440,7 +431,7 @@ void BasicBlock::addToDefsList(ast_node* n) {
         nodeName = ((ast_id*)n)->get_orgname();
     else if (n->get_nodetype() == AST_FIELD) {
         ast_field* fieldNode = (ast_field*)n;
-        nodeName = fieldNode->get_first()->get_orgname() + string(".") + fieldNode->get_second()->get_orgname();
+        nodeName = /*fieldNode->get_first()->get_orgname() + string(".") +*/ fieldNode->get_second()->get_orgname();
     }
     mapVarToDefs::iterator nodeDefList = defsList.find(nodeName);
     if (nodeDefList == defsList.end()) {
@@ -457,7 +448,7 @@ void BasicBlock::addToDefsList(Def* newDef) {
         nodeName = ((ast_id*)n)->get_orgname();
     else if (n->get_nodetype() == AST_FIELD) {
         ast_field* fieldNode = (ast_field*)n;
-        nodeName = fieldNode->get_first()->get_orgname() + string(".") + fieldNode->get_second()->get_orgname();
+        nodeName = /*fieldNode->get_first()->get_orgname() + string(".") + */fieldNode->get_second()->get_orgname();
     }
     mapVarToDefs::iterator nodeDefList = defsList.find(nodeName);
     if (nodeDefList == defsList.end()) {
@@ -467,8 +458,58 @@ void BasicBlock::addToDefsList(Def* newDef) {
     }
 }
 
-class Use {
+void BasicBlock::propogateDefs(BasicBlock* succBB) {
+    mapVarToDefs varDefs = getVarDefsList();
+    mapVarToDefs::iterator varDefIt = varDefs.begin();
+    for (; varDefIt != varDefs.end(); varDefIt++) {
+        //printf("\tVar: %s. ", (*varDefIt).first.c_str());
+        string nodeName = (*varDefIt).first;
+        list<Def*>::iterator defIt = (*varDefIt).second.begin();
+        for (; defIt != (*varDefIt).second.end(); defIt++) {
+            Def* oldDef = *defIt;
+            succBB->addToDefsList(oldDef);
+        }
+    }
+}
 
+class Use {
+    ast_node* node;
+    BasicBlock* enclosingBlock;
+    list<Def*> reachingDef;
+
+public:
+    Use(ast_node* n) : node(n) { 
+        if (!(n->get_nodetype() == AST_ID || n->get_nodetype() == AST_FIELD))
+            assert(false && "Adding variable of different type for the definition");
+        enclosingBlock = NULL;
+    }
+    Use(ast_node* n, BasicBlock* b) : node(n), enclosingBlock(b) {
+        if (!(n->get_nodetype() == AST_ID || n->get_nodetype() == AST_FIELD))
+            assert(false && "Adding variable of different type for the definition");
+    }
+
+    ast_node* getNode() {   return node;    }
+    BasicBlock* getBB() {   return enclosingBlock;  }
+    list<Def*> getReachingDefs() {  return reachingDef; }
+
+    void addDefList(list<Def*> newDefList) {
+        for (list<Def*>::iterator defIt = newDefList.begin(); defIt != newDefList.end(); defIt++) {
+            Def* newDef = *defIt;
+            bool alreadyPresent = false;
+            for (list<Def*>::iterator listIt = reachingDef.begin(); listIt != reachingDef.end(); listIt++) {
+                Def* listDef = *listIt;
+                if (newDef == listDef) {
+                    alreadyPresent = true;
+                    break;
+                }
+            }
+            if (!alreadyPresent)
+                reachingDef.push_back(newDef);
+        }
+    }
+    void addDefToReachingDef(Def* newDef) {
+        reachingDef.push_back(newDef);
+    }
 };
 
 typedef pair<ast_foreach*, BasicBlock*> foreachBBPair;
@@ -479,20 +520,44 @@ class DefUseAnalysis : gm_apply {
     BasicBlock* currentBB;
     list<BasicBlock*> worklist;
     list<foreachBBPair> foreachToBBMap;
+//    map<string, Def*> mapNodeToDef;
+    map<ast_node*, Use*> mapNodeToUse;
+
+    bool propogatePhase;
 public:
     DefUseAnalysis(CFG* c) {
         set_for_sent(true);
         set_for_id(false);
         set_separate_post_apply(true);
         currentCFG = c;
-        worklist.push_back(currentCFG->getStartBB());
+        propogatePhase = false;
+    }
+
+    void addArgDefs(ast_procdef* proc) {
+        BasicBlock* startBB = currentCFG->getStartBB();
+        std::list<ast_argdecl*>& inArgs = proc->get_in_args();
+        std::list<ast_argdecl*>::iterator i;
+        for (i = inArgs.begin(); i != inArgs.end(); i++) {
+            ast_typedecl* type = (*i)->get_type();
+            ast_idlist* idlist = (*i)->get_idlist();
+            for (int ii = 0; ii < idlist->get_length(); ii++) {
+                ast_id* id = idlist->get_item(ii);
+                Def* newDef = new Def(id, currentBB);
+                startBB->addToDefsList(newDef);
+                //string nodeName = id->get_orgname();
+                //mapNodeToDef[nodeName] = newDef;
+            }
+        }
+    }
+    void setPropogatePhase(bool b) {
+        propogatePhase = b;
     }
 
     bool apply(ast_sent* s) {
         if (s->get_nodetype() == AST_ASSIGN) {
             ast_assign* assignSent = (ast_assign*)s;
 
-            if (assignSent->is_reduce_assign()) {
+            if (assignSent->is_reduce_assign() && !propogatePhase) {
                 ast_id* boundIt = assignSent->get_bound();
                 foreachBBPair pair;
                 bool found = false;
@@ -522,50 +587,88 @@ public:
 
                 if (assignSent->is_target_scalar()) {
                     ast_id* target = assignSent->get_lhs_scala();
-                    BBAfterForeach->addToGen(target);
+                    BBAfterForeach->addToDefsList(target);
                 } else {
                     ast_field* targetField = assignSent->get_lhs_field();
-                    BBAfterForeach->addToGen(targetField);
+                    BBAfterForeach->addToDefsList(targetField);
                 }
                 if (assignSent->has_lhs_list() && assignSent->is_argminmax_assign()) {
                     list<ast_node*> lhsList = assignSent->get_lhs_list();
                     list<ast_node*>::iterator lhsListIt = lhsList.begin();
                     for (; lhsListIt != lhsList.end(); lhsListIt++) {
                         ast_node* targetNode = *lhsListIt;
-                        BBAfterForeach->addToGen(targetNode);
+                        BBAfterForeach->addToDefsList(targetNode);
                     }
                 }
-            } else {
+            } else if (!propogatePhase){
                 Def* newDef;
                 if (assignSent->is_target_scalar()) {
                     ast_node* targetNode = assignSent->get_lhs_scala();
-                    //newDef = new Def(targetNode, currentBB);
-                    currentBB->addToDefsList(targetNode);
+                    newDef = new Def(targetNode, currentBB);
+                    currentBB->addToDefsList(newDef);
+                    //string nodeName = ((ast_id*)targetNode)->get_orgname();
+                    //mapNodeToDef[nodeName] = newDef;
                 } else {
                     ast_node* targetNode = assignSent->get_lhs_field();
-                    //newDef = new Def(targetNode, currentBB);
-                    currentBB->addToDefsList(targetNode);
+                    newDef = new Def(targetNode, currentBB);
+                    currentBB->addToDefsList(newDef);
+                    ast_field* fieldNode = (ast_field*)targetNode;
+                    //string nodeName = fieldNode->get_first()->get_orgname() + string(".") + fieldNode->get_second()->get_orgname();
+                    //mapNodeToDef[nodeName] = newDef;
                 }
             }
-
-            /*set_for_id(true);
-            assignSent->get_rhs()->traverse_pre(this);
-            if (assignSent->is_reduce_assign() && assignSent->has_lhs_list() && assignSent->is_argminmax_assign()) {
-                list<ast_expr*> rhsList = assignSent->get_rhs_list();
-                list<ast_expr*>::iterator rhsListIt = rhsList.begin();
-                for (; rhsListIt != rhsList.end(); rhsListIt++) {
-                    ast_expr* rhsExpr = *rhsListIt;
-                    rhsExpr->traverse_pre(this);
+            if (propogatePhase) {
+                set_for_id(true);
+                assignSent->get_rhs()->traverse_pre(this);
+                if (assignSent->is_reduce_assign() && assignSent->has_lhs_list() && assignSent->is_argminmax_assign()) {
+                    list<ast_expr*> rhsList = assignSent->get_rhs_list();
+                    list<ast_expr*>::iterator rhsListIt = rhsList.begin();
+                    for (; rhsListIt != rhsList.end(); rhsListIt++) {
+                        ast_expr* rhsExpr = *rhsListIt;
+                        rhsExpr->traverse_pre(this);
+                    }
                 }
+                set_for_id(false);
             }
-            set_for_id(false);*/
+        } else if (s->get_nodetype() == AST_FOREACH) {
+            ast_foreach* foreachSent = (ast_foreach*)s;
+            if (!propogatePhase) {
+                Def* newDef;
+                ast_node* iterNode = foreachSent->get_iterator();
+                newDef = new Def(iterNode, currentBB);
+                currentBB->addToDefsList(newDef);
+                //string nodeName = ((ast_id*)iterNode)->get_orgname();
+                //mapNodeToDef[nodeName] = newDef;
+            } else if (propogatePhase) {
+                set_for_id(true);
+                foreachSent->get_source()->traverse_pre(this);
+                set_for_id(false);
+            }
         }
     }
 
     bool apply(ast_id* id) {
         ast_node* parent = id->get_parent();
-        if (parent == NULL)
-            ;
+        string nodeName = id->get_orgname();
+        mapVarToDefs BBDefsList = currentBB->getVarDefsList();
+        list<Def*> varDefList;
+        mapVarToDefs::iterator nodeDefList = BBDefsList.find(nodeName);
+        if (nodeDefList != BBDefsList.end()) {
+            varDefList = BBDefsList[nodeName];
+        } else {
+            //(*nodeDefList).second.push_back(newDef);
+            assert(false && "Variable is not defined yet.");
+        }
+        if (parent == NULL) {
+            map<ast_node*, Use*>::iterator it = mapNodeToUse.find(id);
+            if (it == mapNodeToUse.end()) {
+                Use* newUse = new Use(id, currentBB);
+                newUse->addDefList(varDefList);
+                mapNodeToUse[id] = newUse;
+            } else {
+                (*it).second->addDefList(varDefList);
+            }
+        }
         if (parent->get_nodetype() == AST_FIELD) {
             ast_field* fieldNode = (ast_field*)parent;
             if (fieldNode->get_first() == id) {
@@ -582,12 +685,6 @@ public:
 
     void processBlock(BasicBlock* bb) {
         list<ast_node*> nodeList = bb->getNodes();
-        list<Def*> genList = bb->getGenList();
-        while(!genList.empty()) {
-            Def* genDef = genList.front();
-            genList.pop_front();
-            bb->addToDefsList(genDef);
-        }
 
         for (list<ast_node*>::iterator nodeListIt = nodeList.begin();
                 nodeListIt != nodeList.end(); nodeListIt++) {
@@ -601,12 +698,47 @@ public:
             } else if (node->get_nodetype() != AST_IF) {
                 node->traverse_pre(this);
             }
+
+            if (node->get_nodetype() == AST_FOREACH) {
+                ast_foreach* foreachSent = (ast_foreach*)node;
+                if (!propogatePhase) {
+                    Def* newDef;
+                    ast_node* iterNode = foreachSent->get_iterator();
+                    newDef = new Def(iterNode, currentBB);
+                    currentBB->addToDefsList(newDef);
+                    //string nodeName = ((ast_id*)iterNode)->get_orgname();
+                    //mapNodeToDef[nodeName] = newDef;
+                } else if (propogatePhase) {
+                    set_for_id(true);
+                    ast_id* sourceNode = foreachSent->get_source();
+                    string nodeName = sourceNode->get_orgname();
+                    mapVarToDefs BBDefsList = currentBB->getVarDefsList();
+                    list<Def*> varDefList;
+                    mapVarToDefs::iterator nodeDefList = BBDefsList.find(nodeName);
+                    if (nodeDefList != BBDefsList.end()) {
+                        varDefList = BBDefsList[nodeName];
+                    } else {
+                        //(*nodeDefList).second.push_back(newDef);
+                        assert(false && "Variable is not defined yet.");
+                    }
+                    map<ast_node*, Use*>::iterator it = mapNodeToUse.find(sourceNode);
+                    if (it == mapNodeToUse.end()) {
+                        Use* newUse = new Use(sourceNode, currentBB);
+                        newUse->addDefList(varDefList);
+                        mapNodeToUse[sourceNode] = newUse;
+                    } else {
+                        (*it).second->addDefList(varDefList);
+                    }
+                    set_for_id(false);
+                }
+            }
         }
     }
 
     void analyse() {
 
         map<int, bool> visited;
+        worklist.push_back(currentCFG->getStartBB());
         visited[worklist.front()->getId()] = true;
         while(!worklist.empty()) {
             BasicBlock* bb = worklist.front();
@@ -618,6 +750,7 @@ public:
                     succListIt != succList.end(); succListIt++) {
                 BasicBlock* succBB = *succListIt;
                 {
+                    bb->propogateDefs(succBB);
                     // Insert the New Basic Block into the sorted Linked list.
                     bool isFound = false;
                     list<BasicBlock*>::iterator worklistIt = worklist.begin();
@@ -646,12 +779,12 @@ public:
         while(!worklist.empty()) {
             BasicBlock* bb = worklist.front();
             worklist.pop_front();
-            printf("BBNumber : %d\n", bb->getId());
+            printf("\nBBNumber : %d\n", bb->getId());
 
             mapVarToDefs varDefs = bb->getVarDefsList();
             mapVarToDefs::iterator varDefIt = varDefs.begin();
             for (; varDefIt != varDefs.end(); varDefIt++) {
-                printf("Var: %s. ", (*varDefIt).first.c_str());
+                printf("\tVar: %s. ", (*varDefIt).first.c_str());
             }
 
             list<BasicBlock*>succList = bb->getSuccList();
@@ -681,12 +814,29 @@ public:
     }
 };
 
+class printDefUseChain : public gm_apply {
+
+public:
+    printDefUseChain() {
+
+    }
+    bool apply(ast_sent* s) {
+
+    }
+
+    bool apply(ast_id* id) {
+
+    }
+}
 void gm_cuda_opt_dependencyAnalysis::process(ast_procdef* proc) {
 
     CFG currentCFG;
     proc->traverse_both(&currentCFG);
     currentCFG.printCFG();
     DefUseAnalysis analysis(&currentCFG);
+    analysis.addArgDefs(proc);
+    analysis.analyse();
+    analysis.setPropogatePhase(true);
     analysis.analyse();
     analysis.print();
     //proc->traverse_pre(&analysis);
