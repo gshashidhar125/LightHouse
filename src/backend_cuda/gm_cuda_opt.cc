@@ -45,37 +45,6 @@ bool gm_cuda_gen::do_local_optimize_lib() {
     return 1;//get_lib()->do_local_optimize();
 }
 
-struct compareNodes {
-    bool isSameFieldNames(ast_field* f1, ast_field* f2) {
-        ast_id* id1 = f1->get_first();
-        ast_id* id2 = f2->get_first();
-        if (!(strcmp(id1->get_orgname(), id2->get_orgname()))) {
-            id1 = f1->get_second();
-            id2 = f2->get_second();
-            if (!(strcmp(id1->get_orgname(), id2->get_orgname()))) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    bool operator() (ast_node*& n1, ast_node*& n2) {
-//    bool sameVariableName(ast_node* n1, ast_node* n2) {
-    
-        if (n1->get_nodetype() != n2->get_nodetype())
-            return false;
-        if (n1->get_nodetype() == AST_ID) {
-            ast_id* id1 = (ast_id*)n1;
-            ast_id* id2 = (ast_id*)n2;
-            return !(strcmp(id1->get_orgname(), id2->get_orgname()));
-        }
-        if (n1->get_nodetype() == AST_FIELD) {
-            return isSameFieldNames((ast_field*)n1, (ast_field*)n2);
-        }
-        return false;
-    }
-};
-
 class Def;
 //typedef map<ast_node*, list<Def *>, compareNodes > mapASTNodeToDefs;
 typedef map<string , list<Def *> > mapVarToDefs;
@@ -117,9 +86,11 @@ public:
     }
 
     mapVarToDefs getVarDefsList() { return defsList;    }
-    void addToDefsList(ast_node* n);
-    void addToDefsList(Def* d);
-    void propogateDefs(BasicBlock* succ);
+    bool addToDefsList(ast_sent* s, ast_node* n, bool eraseDefs = false);
+    bool addToDefsList(Def* d, bool eraseDefs = false);
+    bool propogateDefs(BasicBlock* succ);
+
+    void printDefsList();
 
     void dump(ofstream &out) {
 
@@ -245,9 +216,16 @@ public:
         set_separate_post_apply(true);
         endBB = NULL;
         startBB = new BasicBlock();
+        addToBBList(startBB);
         currentBB = startBB;
         startOfElse = false;
     }
+
+    void addToBBList(BasicBlock* newBB) {
+        BBList.push_back(newBB);
+    }
+
+    list<BasicBlock*> getBBList() { return BBList;  }
 
     BasicBlock* getStartBB() {  return startBB; }
     void setThenBlock(ast_node* ifNode, BasicBlock* t) {
@@ -293,6 +271,7 @@ public:
                             startOfElse = true;
                             setThenBlock(parent, currentBB);
                             BasicBlock* newBB = new BasicBlock();
+                            addToBBList(newBB);
                             addSuccToElseBlock(parent, newBB);
                             currentBB = newBB;
                         }
@@ -302,6 +281,7 @@ public:
                         startOfElse = true;
                         setThenBlock(parent, currentBB);
                         BasicBlock* newBB = new BasicBlock();
+                        addToBBList(newBB);
                         addSuccToElseBlock(parent, newBB);
                         currentBB = newBB;
                     }
@@ -315,6 +295,7 @@ public:
             // Basic Block for Foreach Entry(Header)
             if (!startOfElse) {
                 newBB = new BasicBlock();
+                addToBBList(newBB);
                 currentBB->addSucc(newBB);
             } else {
                 newBB = currentBB;
@@ -325,11 +306,13 @@ public:
             currentBB->addNode((ast_node*)s);
             // Basic Block for Foreach Body
             newBB = new BasicBlock();
+            addToBBList(newBB);
             currentBB->addSucc(newBB);
             currentBB = newBB;
         } else if (s->get_nodetype() == AST_IF) {
             currentBB->addNode((ast_node*)s);
             BasicBlock* thenBlock = new BasicBlock();
+            addToBBList(thenBlock);
             currentBB->addSucc(thenBlock);
             ifNodeInfo* newIfNode = new ifNodeInfo(s, currentBB);
             currentBB = thenBlock;
@@ -351,6 +334,7 @@ public:
             headerList.pop();
             currentBB->addSucc(headerBB);
             BasicBlock* newBB = new BasicBlock();
+            addToBBList(newBB);
             headerBB->addSucc(newBB);
             currentBB = newBB;
         } else if (s->get_nodetype() == AST_IF) {
@@ -364,6 +348,7 @@ public:
                 nodeInfo->thenBlock = currentBB;
             BasicBlock* thenBlock = nodeInfo->thenBlock;
             BasicBlock* newBB = new BasicBlock();
+            addToBBList(newBB);
             thenBlock->addSucc(newBB);
             if (currentIfNode->get_else() == NULL) {
                 BasicBlock* condBlock = nodeInfo->condBlock;
@@ -394,7 +379,7 @@ public:
             list<BasicBlock*>::iterator succIt = succList.begin();
             for (; succIt != succList.end(); succIt++) {
                 BasicBlock* succ = *succIt;
-                printf("%d -> %d\n", bb->getId(), succ->getId());
+                //printf("%d -> %d\n", bb->getId(), succ->getId());
                 cfgFile << bb->getId() << " -> " << succ->getId() << "\n";
                 if (succ->getId() > bb->getId())
                     bbList.push_back(succ);
@@ -406,26 +391,60 @@ public:
 };
 
 class Def {
+    ast_sent* defStmt;
     ast_node* node;
     BasicBlock* enclosingBlock;
 
 public:
-    Def(ast_node* n) : node(n) { 
+    Def(ast_sent* s, ast_node* n) : defStmt(s), node(n) { 
         if (!(n->get_nodetype() == AST_ID || n->get_nodetype() == AST_FIELD))
             assert(false && "Adding variable of different type for the definition");
         enclosingBlock = NULL;
     }
-    Def(ast_node* n, BasicBlock* b) : node(n), enclosingBlock(b) {
+    Def(ast_sent* s, ast_node* n, BasicBlock* b) : defStmt(s), node(n), enclosingBlock(b) {
         if (!(n->get_nodetype() == AST_ID || n->get_nodetype() == AST_FIELD))
             assert(false && "Adding variable of different type for the definition");
     }
 
+    ast_sent* getStmt() {   return defStmt; }
     ast_node* getNode() {   return node;    }
     BasicBlock* getBB() {   return enclosingBlock;  }
+
+    char* getName() {
+        if (node->get_nodetype() == AST_ID) {
+            return ((ast_id*)node)->get_orgname();
+        } else if (node->get_nodetype() == AST_FIELD) {
+            ast_field* fieldNode = (ast_field*)node;
+            ast_id* property = fieldNode->get_second();
+            return property->get_orgname();
+        }
+    }
 };
 
-void BasicBlock::addToDefsList(ast_node* n) {
-    Def* newDef = new Def(n, this);
+void BasicBlock::printDefsList() {
+    mapVarToDefs::iterator defListIt = defsList.begin();
+    for (; defListIt != defsList.end(); defListIt++) {
+        string nodeName = (*defListIt).first;
+        printf("Define Variable %s at :\n", nodeName.c_str());
+        list<Def *>defs = (*defListIt).second;
+        int defCount = 0;
+        for (list<Def *>::iterator defIt = defs.begin(); defIt != defs.end(); defIt++) {
+            Def* nodeDef = *defIt;
+            if (nodeDef->getStmt() != NULL) {
+                printf("\n %d: ", defCount);
+                nodeDef->getStmt()->dump_tree(2);
+                printf(" From Basic Block = %d", nodeDef->getBB()->getId());
+            } else {
+                printf("\n %d: as Arguments ", defCount);
+            }
+            defCount++;
+        }
+        printf("\n\n");
+    }
+}
+
+bool BasicBlock::addToDefsList(ast_sent* s, ast_node* n, bool eraseDefs) {
+    Def* newDef = new Def(s, n, this);
     string nodeName;
     if (n->get_nodetype() == AST_ID)
         nodeName = ((ast_id*)n)->get_orgname();
@@ -436,12 +455,23 @@ void BasicBlock::addToDefsList(ast_node* n) {
     mapVarToDefs::iterator nodeDefList = defsList.find(nodeName);
     if (nodeDefList == defsList.end()) {
         defsList[nodeName].push_back(newDef);
+        return true;
     } else {
+        if (eraseDefs) {
+            (*nodeDefList).second.clear();
+            (*nodeDefList).second.push_back(newDef);
+            return true;
+        }
+        for (list<Def*>::iterator it = (*nodeDefList).second.begin(); it != (*nodeDefList).second.end(); it++) {
+            if (newDef == *it)
+                return false;
+        }
         (*nodeDefList).second.push_back(newDef);
+        return true;
     }
 }
 
-void BasicBlock::addToDefsList(Def* newDef) {
+bool BasicBlock::addToDefsList(Def* newDef, bool eraseDefs) {
     ast_node* n = newDef->getNode();
     string nodeName;
     if (n->get_nodetype() == AST_ID)
@@ -453,23 +483,36 @@ void BasicBlock::addToDefsList(Def* newDef) {
     mapVarToDefs::iterator nodeDefList = defsList.find(nodeName);
     if (nodeDefList == defsList.end()) {
         defsList[nodeName].push_back(newDef);
+        return true;
     } else {
+        if (eraseDefs) {
+            (*nodeDefList).second.clear();
+            (*nodeDefList).second.push_back(newDef);
+            return true;
+        }
+        for (list<Def*>::iterator it = (*nodeDefList).second.begin(); it != (*nodeDefList).second.end(); it++) {
+            if (newDef == *it)
+                return false;
+        }
         (*nodeDefList).second.push_back(newDef);
+        return true;
     }
 }
 
-void BasicBlock::propogateDefs(BasicBlock* succBB) {
+bool BasicBlock::propogateDefs(BasicBlock* succBB) {
     mapVarToDefs varDefs = getVarDefsList();
     mapVarToDefs::iterator varDefIt = varDefs.begin();
+    bool isChanged = false;
     for (; varDefIt != varDefs.end(); varDefIt++) {
         //printf("\tVar: %s. ", (*varDefIt).first.c_str());
         string nodeName = (*varDefIt).first;
         list<Def*>::iterator defIt = (*varDefIt).second.begin();
         for (; defIt != (*varDefIt).second.end(); defIt++) {
             Def* oldDef = *defIt;
-            succBB->addToDefsList(oldDef);
+            isChanged |= succBB->addToDefsList(oldDef);
         }
     }
+    return isChanged;
 }
 
 class Use {
@@ -507,6 +550,15 @@ public:
                 reachingDef.push_back(newDef);
         }
     }
+
+    void printReachingDefs() {
+        for (list<Def *>::iterator defIt = reachingDef.begin(); defIt != reachingDef.end(); defIt++) {
+            Def* nodeDef = *defIt;
+            nodeDef->getStmt()->dump_tree(2);
+        }
+        printf("\n\n");
+    }
+
     void addDefToReachingDef(Def* newDef) {
         reachingDef.push_back(newDef);
     }
@@ -523,7 +575,7 @@ class DefUseAnalysis : gm_apply {
 //    map<string, Def*> mapNodeToDef;
     map<ast_node*, Use*> mapNodeToUse;
 
-    bool propogatePhase;
+    bool propogatePhase, dumpDefUse;
 public:
     DefUseAnalysis(CFG* c) {
         set_for_sent(true);
@@ -531,6 +583,7 @@ public:
         set_separate_post_apply(true);
         currentCFG = c;
         propogatePhase = false;
+        dumpDefUse = false;
     }
 
     void addArgDefs(ast_procdef* proc) {
@@ -542,7 +595,7 @@ public:
             ast_idlist* idlist = (*i)->get_idlist();
             for (int ii = 0; ii < idlist->get_length(); ii++) {
                 ast_id* id = idlist->get_item(ii);
-                Def* newDef = new Def(id, currentBB);
+                Def* newDef = new Def(NULL, id, currentBB);
                 startBB->addToDefsList(newDef);
                 //string nodeName = id->get_orgname();
                 //mapNodeToDef[nodeName] = newDef;
@@ -587,31 +640,31 @@ public:
 
                 if (assignSent->is_target_scalar()) {
                     ast_id* target = assignSent->get_lhs_scala();
-                    BBAfterForeach->addToDefsList(target);
+                    BBAfterForeach->addToDefsList(s, target, true);
                 } else {
                     ast_field* targetField = assignSent->get_lhs_field();
-                    BBAfterForeach->addToDefsList(targetField);
+                    BBAfterForeach->addToDefsList(s, targetField, true);
                 }
                 if (assignSent->has_lhs_list() && assignSent->is_argminmax_assign()) {
                     list<ast_node*> lhsList = assignSent->get_lhs_list();
                     list<ast_node*>::iterator lhsListIt = lhsList.begin();
                     for (; lhsListIt != lhsList.end(); lhsListIt++) {
                         ast_node* targetNode = *lhsListIt;
-                        BBAfterForeach->addToDefsList(targetNode);
+                        BBAfterForeach->addToDefsList(s, targetNode, true);
                     }
                 }
             } else if (!propogatePhase){
                 Def* newDef;
                 if (assignSent->is_target_scalar()) {
                     ast_node* targetNode = assignSent->get_lhs_scala();
-                    newDef = new Def(targetNode, currentBB);
-                    currentBB->addToDefsList(newDef);
+                    newDef = new Def(s, targetNode, currentBB);
+                    currentBB->addToDefsList(newDef, true);
                     //string nodeName = ((ast_id*)targetNode)->get_orgname();
                     //mapNodeToDef[nodeName] = newDef;
                 } else {
                     ast_node* targetNode = assignSent->get_lhs_field();
-                    newDef = new Def(targetNode, currentBB);
-                    currentBB->addToDefsList(newDef);
+                    newDef = new Def(s, targetNode, currentBB);
+                    currentBB->addToDefsList(newDef, true);
                     ast_field* fieldNode = (ast_field*)targetNode;
                     //string nodeName = fieldNode->get_first()->get_orgname() + string(".") + fieldNode->get_second()->get_orgname();
                     //mapNodeToDef[nodeName] = newDef;
@@ -635,8 +688,8 @@ public:
             if (!propogatePhase) {
                 Def* newDef;
                 ast_node* iterNode = foreachSent->get_iterator();
-                newDef = new Def(iterNode, currentBB);
-                currentBB->addToDefsList(newDef);
+                newDef = new Def(s, iterNode, currentBB);
+                currentBB->addToDefsList(newDef, true);
                 //string nodeName = ((ast_id*)iterNode)->get_orgname();
                 //mapNodeToDef[nodeName] = newDef;
             } else if (propogatePhase) {
@@ -659,6 +712,22 @@ public:
             //(*nodeDefList).second.push_back(newDef);
             assert(false && "Variable is not defined yet.");
         }
+        if (dumpDefUse) {
+            if (parent != NULL && parent->get_nodetype() == AST_FIELD) {
+                if (((ast_field*)parent)->get_first() == id) {
+                    return true;
+                }
+            }
+            map<ast_node*, Use*>::iterator it = mapNodeToUse.find(id);
+            if (it == mapNodeToUse.end()) {
+                assert(false && "Def list for the use of the variable not found.");
+            } else {
+                printf("Use of variable ");
+                (*it).first->dump_tree(2);
+                (*it).second->printReachingDefs();
+            }
+            return true;
+        }
         if (parent == NULL) {
             map<ast_node*, Use*>::iterator it = mapNodeToUse.find(id);
             if (it == mapNodeToUse.end()) {
@@ -674,12 +743,26 @@ public:
             if (fieldNode->get_first() == id) {
                 ; // do Nothing
             } else if (fieldNode->get_second() == id) {
-                ;
+                map<ast_node*, Use*>::iterator it = mapNodeToUse.find(id);
+                if (it == mapNodeToUse.end()) {
+                    Use* newUse = new Use(id, currentBB);
+                    newUse->addDefList(varDefList);
+                    mapNodeToUse[id] = newUse;
+                } else {
+                    (*it).second->addDefList(varDefList);
+                }
             }
         } else if (parent->get_nodetype() == AST_MAPACCESS) {
             ;
         } else {
-            ;
+            map<ast_node*, Use*>::iterator it = mapNodeToUse.find(id);
+            if (it == mapNodeToUse.end()) {
+                Use* newUse = new Use(id, currentBB);
+                newUse->addDefList(varDefList);
+                mapNodeToUse[id] = newUse;
+            } else {
+                (*it).second->addDefList(varDefList);
+            }
         }
     }
 
@@ -704,8 +787,8 @@ public:
                 if (!propogatePhase) {
                     Def* newDef;
                     ast_node* iterNode = foreachSent->get_iterator();
-                    newDef = new Def(iterNode, currentBB);
-                    currentBB->addToDefsList(newDef);
+                    newDef = new Def(foreachSent, iterNode, currentBB);
+                    currentBB->addToDefsList(newDef, true);
                     //string nodeName = ((ast_id*)iterNode)->get_orgname();
                     //mapNodeToDef[nodeName] = newDef;
                 } else if (propogatePhase) {
@@ -743,7 +826,7 @@ public:
         while(!worklist.empty()) {
             BasicBlock* bb = worklist.front();
             worklist.pop_front();
-            printf("BBNumber : %d\n", bb->getId());
+            //printf("BBNumber : %d\n", bb->getId());
             processBlock(bb);
             list<BasicBlock*>succList = bb->getSuccList();
             for (list<BasicBlock*>::iterator succListIt = succList.begin(); 
@@ -770,22 +853,36 @@ public:
                 }
             }
         }
+        bool hasChanged = true;
+        while(hasChanged) {
+            hasChanged = false;
+            list<BasicBlock*>currentBBList = currentCFG->getBBList();
+            for (list<BasicBlock*>::iterator it = currentBBList.begin(); 
+                    it != currentBBList.end(); it++) {
+                BasicBlock* bb = *it;
+                list<BasicBlock*>succList = bb->getSuccList();
+                for (list<BasicBlock*>::iterator succListIt = succList.begin(); 
+                        succListIt != succList.end(); succListIt++) {
+                    BasicBlock* succBB = *succListIt;
+                    hasChanged |= bb->propogateDefs(succBB);
+                }
+            }
+        }
     }
     void print() {
         
         map<int, bool> visited;
         worklist.push_back(currentCFG->getStartBB());
         visited[worklist.front()->getId()] = true;
+        dumpDefUse = true;
+        //set_for_sent(false);
+        set_for_id(true);
         while(!worklist.empty()) {
             BasicBlock* bb = worklist.front();
             worklist.pop_front();
-            printf("\nBBNumber : %d\n", bb->getId());
-
-            mapVarToDefs varDefs = bb->getVarDefsList();
-            mapVarToDefs::iterator varDefIt = varDefs.begin();
-            for (; varDefIt != varDefs.end(); varDefIt++) {
-                printf("\tVar: %s. ", (*varDefIt).first.c_str());
-            }
+            //printf("\nBBNumber : %d\n", bb->getId());
+            bb->printDefsList();
+            processBlock(bb);
 
             list<BasicBlock*>succList = bb->getSuccList();
             for (list<BasicBlock*>::iterator succListIt = succList.begin(); 
@@ -811,23 +908,12 @@ public:
                 }
             }
         }
+        dumpDefUse = false;
+        //set_for_sent(true);
+        set_for_id(false);
     }
 };
 
-class printDefUseChain : public gm_apply {
-
-public:
-    printDefUseChain() {
-
-    }
-    bool apply(ast_sent* s) {
-
-    }
-
-    bool apply(ast_id* id) {
-
-    }
-}
 void gm_cuda_opt_dependencyAnalysis::process(ast_procdef* proc) {
 
     CFG currentCFG;
