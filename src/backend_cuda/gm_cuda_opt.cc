@@ -86,8 +86,8 @@ public:
     }
 
     mapVarToDefs getVarDefsList() { return defsList;    }
-    bool addToDefsList(ast_sent* s, ast_node* n, bool eraseDefs = false);
-    bool addToDefsList(Def* d, bool eraseDefs = false);
+    bool addToDefsList(ast_sent* s, ast_node* n, bool eraseDefs = false, bool isReduceDef = false);
+    bool addToDefsList(Def* d, bool eraseDefs = false, bool isReduceDef = false);
     bool propogateDefs(BasicBlock* succ);
 
     void printDefsList();
@@ -393,21 +393,26 @@ public:
 class Def {
     ast_sent* defStmt;
     ast_node* node;
+    bool reduceDef;
     BasicBlock* enclosingBlock;
 
 public:
     Def(ast_sent* s, ast_node* n) : defStmt(s), node(n) { 
         if (!(n->get_nodetype() == AST_ID || n->get_nodetype() == AST_FIELD))
             assert(false && "Adding variable of different type for the definition");
+        reduceDef = false;
         enclosingBlock = NULL;
     }
     Def(ast_sent* s, ast_node* n, BasicBlock* b) : defStmt(s), node(n), enclosingBlock(b) {
         if (!(n->get_nodetype() == AST_ID || n->get_nodetype() == AST_FIELD))
             assert(false && "Adding variable of different type for the definition");
+        reduceDef = false;
     }
 
     ast_sent* getStmt() {   return defStmt; }
     ast_node* getNode() {   return node;    }
+    void setReduceDef() {   reduceDef = true;   }
+    bool isReduceDef()  {   return reduceDef;   }
     BasicBlock* getBB() {   return enclosingBlock;  }
 
     char* getName() {
@@ -443,9 +448,11 @@ void BasicBlock::printDefsList() {
     }
 }
 
-bool BasicBlock::addToDefsList(ast_sent* s, ast_node* n, bool eraseDefs) {
+bool BasicBlock::addToDefsList(ast_sent* s, ast_node* n, bool eraseDefs, bool isReduceDef) {
     Def* newDef = new Def(s, n, this);
     string nodeName;
+    if (isReduceDef)
+        newDef->setReduceDef();
     if (n->get_nodetype() == AST_ID)
         nodeName = ((ast_id*)n)->get_orgname();
     else if (n->get_nodetype() == AST_FIELD) {
@@ -465,15 +472,19 @@ bool BasicBlock::addToDefsList(ast_sent* s, ast_node* n, bool eraseDefs) {
         for (list<Def*>::iterator it = (*nodeDefList).second.begin(); it != (*nodeDefList).second.end(); it++) {
             if (newDef == *it)
                 return false;
+            if ((*it)->isReduceDef())
+                return false;
         }
         (*nodeDefList).second.push_back(newDef);
         return true;
     }
 }
 
-bool BasicBlock::addToDefsList(Def* newDef, bool eraseDefs) {
+bool BasicBlock::addToDefsList(Def* newDef, bool eraseDefs, bool isReduceDef) {
     ast_node* n = newDef->getNode();
     string nodeName;
+    if (isReduceDef)
+        newDef->setReduceDef();
     if (n->get_nodetype() == AST_ID)
         nodeName = ((ast_id*)n)->get_orgname();
     else if (n->get_nodetype() == AST_FIELD) {
@@ -492,6 +503,8 @@ bool BasicBlock::addToDefsList(Def* newDef, bool eraseDefs) {
         }
         for (list<Def*>::iterator it = (*nodeDefList).second.begin(); it != (*nodeDefList).second.end(); it++) {
             if (newDef == *it)
+                return false;
+            if ((*it)->isReduceDef())
                 return false;
         }
         (*nodeDefList).second.push_back(newDef);
@@ -552,9 +565,18 @@ public:
     }
 
     void printReachingDefs() {
+        printf("Defined at :");
+        int defCount = 0;
         for (list<Def *>::iterator defIt = reachingDef.begin(); defIt != reachingDef.end(); defIt++) {
             Def* nodeDef = *defIt;
-            nodeDef->getStmt()->dump_tree(2);
+            if (nodeDef->getStmt() != NULL) {
+                printf("\n %d: ", defCount);
+                nodeDef->getStmt()->dump_tree(2);
+                printf(" From Basic Block = %d", nodeDef->getBB()->getId());
+            } else {
+                printf("\n %d: as Arguments ", defCount);
+            }
+            defCount++;
         }
         printf("\n\n");
     }
@@ -640,17 +662,17 @@ public:
 
                 if (assignSent->is_target_scalar()) {
                     ast_id* target = assignSent->get_lhs_scala();
-                    BBAfterForeach->addToDefsList(s, target, true);
+                    BBAfterForeach->addToDefsList(s, target, true, true);
                 } else {
                     ast_field* targetField = assignSent->get_lhs_field();
-                    BBAfterForeach->addToDefsList(s, targetField, true);
+                    BBAfterForeach->addToDefsList(s, targetField, true, true);
                 }
                 if (assignSent->has_lhs_list() && assignSent->is_argminmax_assign()) {
                     list<ast_node*> lhsList = assignSent->get_lhs_list();
                     list<ast_node*>::iterator lhsListIt = lhsList.begin();
                     for (; lhsListIt != lhsList.end(); lhsListIt++) {
                         ast_node* targetNode = *lhsListIt;
-                        BBAfterForeach->addToDefsList(s, targetNode, true);
+                        BBAfterForeach->addToDefsList(s, targetNode, true, true);
                     }
                 }
             } else if (!propogatePhase){
@@ -723,7 +745,8 @@ public:
                 assert(false && "Def list for the use of the variable not found.");
             } else {
                 printf("Use of variable ");
-                (*it).first->dump_tree(2);
+                (*it).first->dump_tree(0);
+                printf("\n");
                 (*it).second->printReachingDefs();
             }
             return true;
@@ -814,6 +837,11 @@ public:
                     }
                     set_for_id(false);
                 }
+            } else if (node->get_nodetype() == AST_IF && propogatePhase) {
+                ast_if* ifSent = (ast_if*)node;
+                set_for_id(true);
+                ifSent->get_cond()->traverse_pre(this);
+                set_for_id(false);
             }
         }
     }
@@ -880,7 +908,7 @@ public:
         while(!worklist.empty()) {
             BasicBlock* bb = worklist.front();
             worklist.pop_front();
-            //printf("\nBBNumber : %d\n", bb->getId());
+            printf("\nBBNumber : %d\n", bb->getId());
             bb->printDefsList();
             processBlock(bb);
 
