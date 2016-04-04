@@ -93,6 +93,7 @@ public:
     void printGenKillSet();
     void printINAndOUTSets();
 
+    mapVarToDefs getINSet() { return IN; }
     bool addToINSet(Def* inDef);
     bool propogateOutToSucc(BasicBlock* succBB);
     bool generateOut();
@@ -698,6 +699,7 @@ public:
         currentCFG = c;
     }
 
+    list<foreachBBPair> getForeachToBBMap() {   return foreachToBBMap;  }
     map<ast_node*, Use*> getMapNodeToUse() {    return mapNodeToUse;    }
     Use* getUseForNode(ast_node* n) {
         map<ast_node*, Use*>::iterator nodeToUseIt = mapNodeToUse.find(n);
@@ -937,36 +939,32 @@ class gm_identifyBooleanReduction : public gm_apply {
 public:
     gm_identifyBooleanReduction() {
         set_for_sent(true);
+        set_for_id(false);
     }
 
     bool apply(ast_sent* s) {
         ast_assign* assignSent = NULL;
         ast_id* targetId = NULL;
         ast_field* targetField = NULL;
-        bool isBooleanReduction = false, isTargetId = true;
         string nodeName;
+        GM_REDUCE_T reduceType;
         if (s->get_nodetype() == AST_ASSIGN) {
             assignSent = (ast_assign*)s;
-            if (assignSent->is_reduce_assign()) {
+            reduceType = (GM_REDUCE_T)assignSent->get_reduce_type();
+            if (gm_is_boolean_reduce_op(reduceType)) {
                 if (assignSent->is_target_scalar()) {
                     targetId = assignSent->get_lhs_scala();
-                    if (gm_is_boolean_type(targetId->getTypeSummary())) {
-                        isBooleanReduction = true;
-                        isTargetId = true;
-                        nodeName = targetId->get_orgname();
-                    }
+                    nodeName = targetId->get_orgname();
                 } else {
                     targetField = assignSent->get_lhs_field();
-                    if (gm_is_boolean_type(targetField->getTargetTypeSummary())) {
-                        isBooleanReduction = true;
-                        isTargetId = false;
-                        nodeName = targetField->get_second()->get_orgname();
-                    }
+                    nodeName = targetField->get_second()->get_orgname();
                 }
+            } else {
+                return true;
             }
-        }
-        if (!isBooleanReduction)
+        } else {
             return true;
+        }
 
         BasicBlock* enclosingBB = analysisData.getCFG()->getBBForSent(s);
         if (enclosingBB == NULL) {
@@ -977,41 +975,103 @@ public:
         }
         printf("Enclosing in Basic Block Number: %d\n", enclosingBB->getId());
 
-        mapVarToDefs BBDefsList = enclosingBB->getGenSet();
-        mapVarToDefs::iterator BBDefsListIt = BBDefsList.find(nodeName);
-        if (BBDefsListIt == BBDefsList.end()) {
-            assert(false && "Could not find any definitions coming to the Basic Block\n");
-            return false;
+        mapVarToDefs BBINSet = enclosingBB->getINSet();
+        mapVarToDefs::iterator BBINSetIt = BBINSet.find(nodeName);
+        if (BBINSetIt == BBINSet.end()) {
+            //assert(false && "Could not find any definitions coming to the Basic Block\n");
+            addAssignmentInstrOutsideLoop(assignSent);
+            return true;
         }
-        list<Def*>::iterator defsIt = (*BBDefsListIt).second.begin();
+        list<Def*> varDefList = (*BBINSetIt).second;
+        list<Def*>::iterator varDefListIt = varDefList.begin();
         int defCount = 0;
-        for (; defsIt != (*BBDefsListIt).second.end(); defsIt++) {
-            Def* reachingDef = *defsIt;
+        bool insertAssignment = true;
+        for (; varDefListIt != varDefList.end(); varDefListIt++) {
+            Def* reachingDef = *varDefListIt;
             if (reachingDef->getStmt() != NULL) {
                 printf("\n %d: ", defCount);
                 reachingDef->getStmt()->dump_tree(2);
                 printf(" From Basic Block = %d", reachingDef->getBB()->getId());
+                insertAssignment &= needAssignmentBeforeLoop(reachingDef, reduceType);
             } else {
                 printf("\n %d: as Arguments ", defCount);
+                insertAssignment &= true;
             }
             defCount++;
         }
-/*        map<ast_node*, Use*> useMapForNode = analysisData.getDefUse()->getMapNodeToUse();
-        map<ast_node*, Use*>::iterator it;
-        printf("Shashidhar For the variable ");
-        if (isTargetId) {
-            it = useMapForNode.find(targetId);
-            targetId->dump_tree(0);
+        printf("\nNeeds Boolean Assignment: %d\n", insertAssignment);
+        if (insertAssignment == true) {
+            addAssignmentInstrOutsideLoop(assignSent);
+        }
+    }
+
+    bool needAssignmentBeforeLoop(Def* reachingDef, GM_REDUCE_T reduceType) {
+        ast_node* node = reachingDef->getNode();
+        ast_sent* s = reachingDef->getStmt();
+        ast_assign* assignSent = (ast_assign*)s;
+        ast_expr* rhsExpr = assignSent->get_rhs();
+
+        if (rhsExpr->is_boolean_literal()) {
+            if (reduceType == GMREDUCE_AND && rhsExpr->get_bval() == true)
+                return false;
+            else if (reduceType == GMREDUCE_OR && rhsExpr->get_bval() == false)
+                return false;
+        }
+        return true;
+    }
+
+    void addAssignmentInstrOutsideLoop(ast_assign* s) {
+
+        foreachBBPair pair;
+        bool found = false;
+        ast_id* boundIt = s->get_bound();
+        list<foreachBBPair> foreachToBBMap = analysisData.getDefUse()->getForeachToBBMap();
+        for (list<foreachBBPair>::iterator It = foreachToBBMap.begin(); It != foreachToBBMap.end(); It++) {
+            pair = *It;
+            if (!strcmp(pair.first->get_iterator()->get_orgname(), boundIt->get_orgname())) {
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+            assert(false && "Bounding iterator for the reduction assignment not found");
+
+        BasicBlock* foreachBB = pair.second, *insertIntoBB;
+        printf("Basic Block of the For Loop = %d\n", foreachBB->getId());
+
+        list<BasicBlock*> BBList = analysisData.getCFG()->getBBList();
+        for (list<BasicBlock*>::iterator BBListIt = BBList.begin(); BBListIt != BBList.end(); BBListIt++) {
+            BasicBlock* bb = (*BBListIt);
+            if (bb->getId() == foreachBB->getId() - 1) {
+                insertIntoBB = bb;
+                break;
+            }
+        }
+        ast_sent* insertAfter = (ast_sent*)insertIntoBB->getNodes().back();
+        printf("\nInsert after sent: \n");
+        insertAfter->dump_tree(2);
+
+        ast_expr* rhsExpr = NULL;
+        GM_REDUCE_T reduceType = (GM_REDUCE_T)s->get_reduce_type();
+        if (reduceType == GMREDUCE_AND)
+            rhsExpr = ast_expr::new_bval_expr(true);
+        else if (reduceType == GMREDUCE_OR)
+            rhsExpr = ast_expr::new_bval_expr(false);
+
+        ast_assign* newAssignSent = NULL;
+        if (s->is_target_scalar()) {
+            string nodeName = s->get_lhs_scala()->get_orgname();
+            ast_id* targetId = s->get_lhs_scala()->copy(true);
+            newAssignSent = ast_assign::new_assign_scala(targetId, rhsExpr);
         } else {
-            it = useMapForNode.find(targetField);
-            targetField->dump_tree(0);
+            ast_field* sourceField = s->get_lhs_field();
+            ast_id* leftId = sourceField->get_first()->copy(true);
+            ast_id* rightId = sourceField->get_second()->copy(true);
+
+            ast_field* targetField = ast_field::new_field(leftId, rightId);
+            newAssignSent = ast_assign::new_assign_field(targetField, rhsExpr);
         }
-        if (it == useMapForNode.end()) {
-            s->dump_tree(2);
-            assert(false && "No Definitions reaching this use.\n");
-            return false;
-        }
-        (*it).second->printReachingDefs();*/
+        gm_add_sent_after(insertAfter, newAssignSent);
     }
 };
 
@@ -1020,6 +1080,6 @@ public:
 void gm_cuda_opt_removeAtomicsForBoolean::process(ast_procdef* proc) {
 
     gm_identifyBooleanReduction optHandler;
-    //proc->traverse_pre(&optHandler);
+    proc->traverse_pre(&optHandler);
 }
 
