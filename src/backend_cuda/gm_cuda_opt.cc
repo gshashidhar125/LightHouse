@@ -936,6 +936,7 @@ void gm_cuda_opt_dependencyAnalysis::process(ast_procdef* proc) {
 
 class gm_identifyBooleanReduction : public gm_apply {
 
+    list<ast_sent*> removeStmts;
 public:
     gm_identifyBooleanReduction() {
         set_for_sent(true);
@@ -1003,6 +1004,7 @@ public:
         if (insertAssignment == true) {
             addAssignmentInstrOutsideLoop(assignSent);
         }
+        replaceReductionStmt(assignSent);
     }
 
     bool needAssignmentBeforeLoop(Def* reachingDef, GM_REDUCE_T reduceType) {
@@ -1073,6 +1075,48 @@ public:
         }
         gm_add_sent_after(insertAfter, newAssignSent);
     }
+
+    void replaceReductionStmt(ast_assign* s) {
+
+        GM_REDUCE_T reduceType = (GM_REDUCE_T)s->get_reduce_type();
+        ast_expr* newRhsExpr = NULL, *currentRhsExpr = s->get_rhs()->copy(true);
+        ast_assign* newAssingSent = NULL;
+        if (reduceType == GMREDUCE_AND) {
+            newRhsExpr = ast_expr::new_luop_expr(currentRhsExpr->get_optype(), currentRhsExpr);
+        }else {
+            newRhsExpr = currentRhsExpr;
+        }
+        ast_expr* normalAssignRhsExpr = NULL;
+        if (reduceType == GMREDUCE_AND)
+            normalAssignRhsExpr = ast_expr::new_bval_expr(false);
+        else if (reduceType == GMREDUCE_OR)
+            normalAssignRhsExpr = ast_expr::new_bval_expr(true);
+
+        ast_assign* normalAssignSent = NULL;
+        if (s->is_target_scalar()) {
+            string nodeName = s->get_lhs_scala()->get_orgname();
+            ast_id* targetId = s->get_lhs_scala()->copy(true);
+            normalAssignSent = ast_assign::new_assign_scala(targetId, normalAssignRhsExpr);
+        } else {
+            ast_field* sourceField = s->get_lhs_field();
+            ast_id* leftId = sourceField->get_first()->copy(true);
+            ast_id* rightId = sourceField->get_second()->copy(true);
+
+            ast_field* targetField = ast_field::new_field(leftId, rightId);
+            normalAssignSent = ast_assign::new_assign_field(targetField, normalAssignRhsExpr);
+        }
+
+        ast_if* ifStmt = ast_if::new_if(newRhsExpr, normalAssignSent, NULL);
+        gm_add_sent_after(s, ifStmt);
+        removeStmts.push_back(s);
+    }
+
+    void removeReductionStmts() {
+        for (list<ast_sent*>::iterator sentIt = removeStmts.begin();
+            sentIt != removeStmts.end(); sentIt++) {
+            gm_ripoff_sent(*sentIt, true);
+        }
+    }
 };
 
 // For reduction statement of Boolean type, we eliminate atomics and replace with
@@ -1081,5 +1125,6 @@ void gm_cuda_opt_removeAtomicsForBoolean::process(ast_procdef* proc) {
 
     gm_identifyBooleanReduction optHandler;
     proc->traverse_pre(&optHandler);
+    optHandler.removeReductionStmts();
 }
 
