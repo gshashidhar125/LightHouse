@@ -1,0 +1,7 @@
+    Graph       CUDA         OMP-1T      OMP-4T      OMP-8T      OMP-16T     OMP-32T     OMP-64T
+soc-Epinions    
+twittercombined 
+soc-LiveJournal 
+soc-pokec       
+com-orkut.ungraph
+USA-ALL         

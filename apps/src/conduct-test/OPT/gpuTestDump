@@ -1,0 +1,35 @@
+soc-Epinions1.edges.conduct.with_header.edge
+Graph Population began
+Graph Population end
+Loading time(milliseconds)  = 145.823685
+Execution time(milliseconds)  = 0.676768
+Verification Success
+Return value = 0.946054
+soc-LiveJournal1.txt.conduct.with_header.edge
+Graph Population began
+Graph Population end
+Loading time(milliseconds)  = 16838.884766
+Execution time(milliseconds)  = 53.865089
+Verification Success
+Return value = 0.942740
+soc-pokec-relationships1.edges.conduct.with_header.edge
+Graph Population began
+Graph Population end
+Loading time(milliseconds)  = 7203.260742
+Execution time(milliseconds)  = 21.997824
+Verification Success
+Return value = 0.950274
+com-orkut.ungraph.txt.conduct.with_header.edge
+Graph Population began
+Graph Population end
+Loading time(milliseconds)  = 27576.593750
+Execution time(milliseconds)  = 79.192413
+Verification Success
+Return value = 0.950226
+USA_ALL.txt.conduct.with_header.edge
+Graph Population began
+Graph Population end
+Loading time(milliseconds)  = 20406.755859
+Execution time(milliseconds)  = 92.103264
+Verification Success
+Return value = 0.950228

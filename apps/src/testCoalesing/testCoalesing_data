@@ -1,0 +1,49 @@
+Testcases:
+
+T1:
+-------------------------------
+// Each thread goes over neighbours of one node.
+Procedure testCoalescing(
+        G: Graph,
+        A: E_P<Int> ) {
+
+    Foreach(n: G.Nodes) {
+        Foreach(t: n.Nbrs) {
+            Edge e = t.ToEdge();
+            e.A = e.A + 10;
+        }
+    }
+}
+-------------------------------
+
+T2:
+-------------------------------
+// Each thread goes over one edge.
+Procedure testCoalescing(
+        G: Graph,
+        A: E_P<Int> ) {
+
+    Foreach(e: G.Edges) {
+        e.A = e.A + 10;
+    }
+}
+-------------------------------
+RBM
+Random bipartite matching algorithm already in the green-marl repository.
+
+Inputs:
+IN1. Complete graph with 400 nodes.
+IN2. Complete graph with 10000 nodes.
+IN3. Complete graph with 10000 nodes. 2 Node properties. 
+
+LT - Loading Time
+ET - Execution Time
+*in milliseconds
+
+        T1                      T2                  T3
+IN1     LT = 45.585728      LT = 44.435390
+        ET = 0.963584       ET = 0.121664
+IN2     LT = 24007.742188   LT = 23642.902344
+        ET = 99.746178      ET = 45.616959
+IN3                                             LT = 26046.675781
+                                                ET = 56.576286

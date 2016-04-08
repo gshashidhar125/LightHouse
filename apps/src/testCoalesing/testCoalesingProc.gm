@@ -1,0 +1,14 @@
+Procedure testCoalescing(
+        G: Graph,
+        A: E_P<Int> ) {
+
+    /*Foreach(n: G.Nodes) {
+        Foreach(t: n.Nbrs) {
+            Edge e = t.ToEdge();
+            e.A = e.A + 10;
+        }
+    }*/
+    Foreach(e: G.Edges) {
+        e.A = e.A + 10;
+    }
+}

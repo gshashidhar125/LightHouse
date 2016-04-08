@@ -52,22 +52,23 @@ int populate(char *fileName, int* row[2]) {
     // For Conductance
     //int* nodeProp = new int[NumNodes + 1];
     //For random bi_partite
-    bool* nodeProp1 = new bool[NumNodes + 1];
-    int* nodeProp2 = new int[NumNodes + 1];
-    int* parent = new int[NumEdges + 1]();
+    //bool* nodeProp1 = new bool[NumNodes + 1];
+    //int* nodeProp2 = new int[NumNodes + 1];
     
+    //For testCoalescing Proc
+    int* edgeProp = new int [NumEdges + 1]();
     int i, j, k;
     // For v_cover
     //bool l;
-    //For sssp, Conductance
-    //int l;
+    //For sssp, Conductance, testCoalescingProc
+    int l;
     //For random bi_partite
-    bool l;
+    //bool l;
     int r;
 
     //For Conductance
     std::string str;
-    for (i = 0; i < NumNodes; i++) {
+/*    for (i = 0; i < NumNodes; i++) {
 
         inputFile >> j >> str >> l >> r;
         //printf("Node : %d, Prop = %d", i, l);
@@ -75,7 +76,7 @@ int populate(char *fileName, int* row[2]) {
         //For random_bipartite
         nodeProp1[j] = l;
         nodeProp2[j] = r;
-    }
+    }*/
 
     // For Conductance
     /*printf("Edge Property:\n");
@@ -88,7 +89,7 @@ int populate(char *fileName, int* row[2]) {
     while(i > 0) {
 
         // For v_cover, SSSP
-        inputFile >> j >> k;
+        inputFile >> j >> k >> l;
         while (lastj <= j || lastj == 0) {
             if (lastj == 0) {
                 row[0][0] = currentIndex;
@@ -99,10 +100,10 @@ int populate(char *fileName, int* row[2]) {
             lastj++;
         }
         row[1][currentIndex] = k;
-        parent[currentIndex] = j;
         // For v_cover
         // For SSSP
-        //edgeProp[currentIndex] = l;
+        // For testCoalescingProc
+        edgeProp[currentIndex] = l;
         currentIndex ++;
         i--;
     }
@@ -134,25 +135,22 @@ int populate(char *fileName, int* row[2]) {
     //CUDA_ERR_CHECK;
     //num = 3;
     //For random_bipartite_matching
-    err = cudaMemcpy(isLeft, nodeProp1, (NumNodes + 1) * sizeof(bool), cudaMemcpyHostToDevice);
-    CUDA_ERR_CHECK;
-    err = cudaMemcpy(Match, nodeProp2, (NumNodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
+    //err = cudaMemcpy(isLeft, nodeProp1, (NumNodes + 1) * sizeof(bool), cudaMemcpyHostToDevice);
+    //CUDA_ERR_CHECK;
+    //err = cudaMemcpy(Match, nodeProp2, (NumNodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
+    //CUDA_ERR_CHECK;
+    //For testCoalescingProc
+    err = cudaMemcpy(A, edgeProp, (NumEdges + 1) * sizeof(int), cudaMemcpyHostToDevice);
     CUDA_ERR_CHECK;
 
-    err = cudaMemcpy(edgeFrom, parent, (NumEdges + 1) * sizeof(int), cudaMemcpyHostToDevice);
-    CUDA_ERR_CHECK;
-    /*printf("\n Parent Array:\n");
-    for (int i = 0; i <= NumEdges; i++) {
-        printf("%d ", parent[i]);
-    }*/
     
     //delete nodeProp;
     //For random_bipartite
-    delete nodeProp1;
-    delete nodeProp2;
-    delete parent;
+    //delete nodeProp1;
+    //delete nodeProp2;
     //printGraph(row);
-
+    //For testCoalescingProc
+    delete edgeProp;
     //printGraphOnDevice<<<1, 1>>>(G0, G1, NumNodes, NumEdges);
     //CUDA_ERR_CHECK;
    

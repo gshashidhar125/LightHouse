@@ -1,5 +1,5 @@
-#ifndef GM_GENERATED_CUDA_RANDOM_BIPARTITE_MATCHING_H
-#define GM_GENERATED_CUDA_RANDOM_BIPARTITE_MATCHING_H
+#ifndef GM_GENERATED_CUDA_TESTCOALESINGPROC_H
+#define GM_GENERATED_CUDA_TESTCOALESINGPROC_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,23 +7,11 @@
 #include <float.h>
 
 #define kernelMacro0 \
-int t0;   \
+int e;   \
 
-#define kernelMacro1 \
-int n, EdgeIter, t;   \
-
-#define kernelMacro2 \
-int t2, n3;   \
-
-#define kernelMacro3 \
-int n4, t5;   \
-
-#define random_bipartite_matchingMacro \
-int*  G0, * G1 , NumNodes , NumEdges , *edgeFrom;   \
-bool* isLeft;   \
-int* Match, *Suitor;   \
-int h_count;   \
-bool h_finished;   \
+#define testCoalescingMacro \
+int*  G0, * G1 , NumNodes , NumEdges ;   \
+int32_t* A;   \
 bool* host_threadBlockBarrierReached;  \
 cudaError_t err;  \
 cudaEvent_t start, stop;
@@ -47,9 +35,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 gpuErrchk(cudaPeekAtLastError());\
 gpuErrchk(cudaDeviceSynchronize());\
 
-#define random_bipartite_matchingMacroGPU \
-__device__ int count;   \
-__device__ bool finished;   \
+#define testCoalescingMacroGPU \
 __device__ bool* gm_threadBlockBarrierReached;  \
 
 

@@ -10,6 +10,7 @@ nbproject
 *.aterm
 *.a
 *.d
+*.dot
 dump
 dump[0-9]
 

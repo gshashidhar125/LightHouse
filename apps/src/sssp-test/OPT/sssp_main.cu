@@ -1,19 +1,14 @@
-#include "random_bipartite_matching.h"
-#include "random_bipartite_matching.cu"
+#include "sssp.h"
+#include "sssp.cu"
 #include <fstream>
 
-random_bipartite_matchingMacro;
+ssspMacro;
 #include "graph.h"
-#include "verify_random_bipartite_matching.h"
-int random_bipartite_matching_CPU(int* G0, int* G1, bool * isLeft, int * Match) {
+#include "verify_sssp.h"
+void sssp_CPU(int* G0, int* G1, int * dist, int * len, int root) {
 
     {
-        h_count = 0;
-        err = cudaMemcpyToSymbol(count, &h_count, sizeof(int), 0, cudaMemcpyHostToDevice);
-        CUDA_ERR_CHECK;
-        h_finished = false;
-        err = cudaMemcpyToSymbol(finished, &h_finished, sizeof(bool), 0, cudaMemcpyHostToDevice);
-        CUDA_ERR_CHECK;
+        fin = false;
         cudaOccupancyMaxPotentialBlockSize(&gm_minGridSize, &gm_blockSize,forEachKernel0, 0, 0);
         gm_gridSize = (NumNodes + 1 + gm_blockSize - 1) / gm_blockSize;
         gm_numBlocksStillToProcess = gm_gridSize, gm_offsetIntoBlocks = 0;
@@ -22,18 +17,16 @@ int random_bipartite_matching_CPU(int* G0, int* G1, bool * isLeft, int * Match) 
                 gm_numBlocksKernelParameter = gm_minGridSize;
             else
                 gm_numBlocksKernelParameter = gm_numBlocksStillToProcess;
-            forEachKernel0<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, isLeft, Match, Suitor, gm_offsetIntoBlocks);
+            forEachKernel0<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, dist, len, root, updated, dist_nxt, updated_nxt, gm_offsetIntoBlocks);
             CUDA_ERR_CHECK;
             gm_numBlocksStillToProcess -= gm_minGridSize;
             gm_offsetIntoBlocks += gm_minGridSize * gm_blockSize;
         }
-        while ( !h_finished)
+        while ( !fin)
         {
-            h_finished = false;
-            err = cudaMemcpyToSymbol(finished, &h_finished, sizeof(bool), 0, cudaMemcpyHostToDevice);
-            CUDA_ERR_CHECK;
-            h_finished = true;
-            err = cudaMemcpyToSymbol(finished, &h_finished, sizeof(bool), 0, cudaMemcpyHostToDevice);
+            fin = true;
+            h___E8 = false;
+            err = cudaMemcpyToSymbol(__E8, &h___E8, sizeof(bool), 0, cudaMemcpyHostToDevice);
             CUDA_ERR_CHECK;
             cudaOccupancyMaxPotentialBlockSize(&gm_minGridSize, &gm_blockSize,forEachKernel1, 0, 0);
             gm_gridSize = (NumEdges + gm_blockSize - 1) / gm_blockSize;
@@ -43,7 +36,7 @@ int random_bipartite_matching_CPU(int* G0, int* G1, bool * isLeft, int * Match) 
                     gm_numBlocksKernelParameter = gm_minGridSize;
                 else
                     gm_numBlocksKernelParameter = gm_numBlocksStillToProcess;
-                forEachKernel1<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, isLeft, Match, Suitor, gm_offsetIntoBlocks);
+                forEachKernel1<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, dist, len, root, updated, dist_nxt, updated_nxt, gm_offsetIntoBlocks);
                 CUDA_ERR_CHECK;
                 gm_numBlocksStillToProcess -= gm_minGridSize;
                 gm_offsetIntoBlocks += gm_minGridSize * gm_blockSize;
@@ -56,34 +49,21 @@ int random_bipartite_matching_CPU(int* G0, int* G1, bool * isLeft, int * Match) 
                     gm_numBlocksKernelParameter = gm_minGridSize;
                 else
                     gm_numBlocksKernelParameter = gm_numBlocksStillToProcess;
-                forEachKernel2<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, isLeft, Match, Suitor, gm_offsetIntoBlocks);
+                forEachKernel2<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, dist, len, root, dist_nxt, updated, updated_nxt, gm_offsetIntoBlocks);
                 CUDA_ERR_CHECK;
                 gm_numBlocksStillToProcess -= gm_minGridSize;
                 gm_offsetIntoBlocks += gm_minGridSize * gm_blockSize;
             }
-            cudaOccupancyMaxPotentialBlockSize(&gm_minGridSize, &gm_blockSize,forEachKernel3, 0, 0);
-            gm_gridSize = (NumNodes + 1 + gm_blockSize - 1) / gm_blockSize;
-            gm_numBlocksStillToProcess = gm_gridSize, gm_offsetIntoBlocks = 0;
-            while (gm_numBlocksStillToProcess > 0) {
-                if (gm_numBlocksStillToProcess > gm_minGridSize)
-                    gm_numBlocksKernelParameter = gm_minGridSize;
-                else
-                    gm_numBlocksKernelParameter = gm_numBlocksStillToProcess;
-                forEachKernel3<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, isLeft, Match, Suitor, gm_offsetIntoBlocks);
-                CUDA_ERR_CHECK;
-                gm_numBlocksStillToProcess -= gm_minGridSize;
-                gm_offsetIntoBlocks += gm_minGridSize * gm_blockSize;
-            }
+            err = cudaMemcpyFromSymbol(&h___E8, __E8, sizeof(bool), 0, cudaMemcpyDeviceToHost);
+            CUDA_ERR_CHECK;
+            fin =  !h___E8;
         }
-        err = cudaMemcpyFromSymbol(&h_count, count, sizeof(int), 0, cudaMemcpyDeviceToHost);
-        CUDA_ERR_CHECK;
-        return h_count;
     }
 }
 
 
 using namespace std;
-// random_bipartite_matching -? : for how to run generated main program
+// sssp -? : for how to run generated main program
 int main(int argc, char* argv[])
 {
 
@@ -105,11 +85,15 @@ int main(int argc, char* argv[])
     CUDA_ERR_CHECK;
     err = cudaMalloc((void **)&G1, (NumEdges + 1) * sizeof(int));
     CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&isLeft, (NumNodes + 1) * sizeof(bool));
+    err = cudaMalloc((void **)&dist, (NumNodes + 1) * sizeof(int));
     CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&Match, (NumNodes + 1) * sizeof(int));
+    err = cudaMalloc((void **)&dist_nxt, (NumNodes + 1) * sizeof(int));
     CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&Suitor, (NumNodes + 1) * sizeof(int));
+    err = cudaMalloc((void **)&len, (NumEdges + 1) * sizeof(int));
+    CUDA_ERR_CHECK;
+    err = cudaMalloc((void **)&updated, (NumNodes + 1) * sizeof(bool));
+    CUDA_ERR_CHECK;
+    err = cudaMalloc((void **)&updated_nxt, (NumNodes + 1) * sizeof(bool));
     CUDA_ERR_CHECK;
     err = cudaMalloc((void **)&edgeFrom, (NumEdges + 1) * sizeof(int));
     CUDA_ERR_CHECK;
@@ -130,14 +114,13 @@ int main(int argc, char* argv[])
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
-    int MainReturn;
-    MainReturn = random_bipartite_matching_CPU(G0, G1, isLeft, Match);
+    sssp_CPU(G0, G1, dist, len, root);
 
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsedTime, start, stop);
     printf("Execution time(milliseconds)  = %f\n", elapsedTime);
-    bool gm_verify = verifyrandom_bipartite_matching(h_G);
+    bool gm_verify = verifysssp(h_G);
     if (!gm_verify) {
         printf("Verification Failed\n");
         return -1;
@@ -148,15 +131,18 @@ int main(int argc, char* argv[])
     CUDA_ERR_CHECK;
     err = cudaFree(G1);
     CUDA_ERR_CHECK;
-    err = cudaFree(isLeft);
+    err = cudaFree(dist);
     CUDA_ERR_CHECK;
-    err = cudaFree(Match);
+    err = cudaFree(dist_nxt);
     CUDA_ERR_CHECK;
-    err = cudaFree(Suitor);
+    err = cudaFree(len);
+    CUDA_ERR_CHECK;
+    err = cudaFree(updated);
+    CUDA_ERR_CHECK;
+    err = cudaFree(updated_nxt);
     CUDA_ERR_CHECK;
     err = cudaFree(host_threadBlockBarrierReached);
     CUDA_ERR_CHECK;
     free(h_G[0]);
     free(h_G[1]);
-    printf("Return value = %d\n", MainReturn);return MainReturn;
 }

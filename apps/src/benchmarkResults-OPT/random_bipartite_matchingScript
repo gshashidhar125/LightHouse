@@ -1,0 +1,31 @@
+reset
+#set terminal eps
+#set terminal wxt size 1000,500
+set terminal postscript eps enhanced mono size 4in,5in # color size 4in,5in
+set output 'random_bipartite_matching-Test.eps'
+#set size 2,1
+set auto x
+set auto y
+#set yrange [1:300000]
+set logscale y
+set style data histogram
+set style histogram cluster gap 3
+# use the below line to include pattern
+set style fill pattern border -1
+#set style fill solid border -1
+set boxwidth 0.9
+set key font ", 17"
+#set key width 1
+set key reverse above Left width 1
+set offset -0.3,-0.3,0,0
+set ylabel " Execution Time(milli sec)" font ",20"
+set xlabel offset 0,-2
+set xtic rotate by -45 scale 0
+#set xlabel "Workloads (#L,#H) "# font ",24"
+#set ytic 2 font ",16"
+set xtics font "Times-Roman, 20" 
+#plot 'immigration.dat' using 6:xtic(1) ti col, '' u 12 ti col, '' u 13 ti col, '' u 14 ti col
+plot 'random_bipartite_matching_plotData' using 2:xtic(1) ti col, '' u 3 ti col, '' u 4 ti col, '' u 5 ti col, '' u 6 ti col, '' u 7 ti col, '' u 8 ti col
+
+#plot 'random_bipartite_matching_plotData' using 7:xtic(1) fs solid 0.10 t "CUDA", '' using 3 fs solid 0.25 t "OPENMP_1Th" #,'' using 4 fs solid 0.60 t "OMP_4T",  '' using 5 fs solid 0.85 t "OMP_8T" using 6 fs solid 0.60 t "OMP_16T",  '' using 7 fs solid 0.85 t "OMP_32T"
+

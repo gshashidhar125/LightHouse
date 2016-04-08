@@ -1,0 +1,18 @@
+1. Sort the graph edge list
+    sort -g -k 1 graphName > outputGraphName
+2. vim command to insert random number at the end of each line
+    :%s/\s*$/\=' ' . (1 + str2nr(matchstr(reltimestr(reltime()), '\v\.@<=\d+')[1:]) % 10)/
+3. Appending and prepending lines to a huge file using ed
+    ed -s file << 'EOF'
+    0a
+    prepening these
+    line to the start 
+    of the file
+    .
+    $a
+    appendin these
+    line to the end
+    of the file
+    .
+    w
+    EOF

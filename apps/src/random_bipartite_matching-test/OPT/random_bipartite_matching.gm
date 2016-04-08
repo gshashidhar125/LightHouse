@@ -22,6 +22,17 @@ Proc random_bipartite_matching(
                 finished &= False;  
             }
         }
+        /*Foreach(e: G.Edges) {
+            Node n = e.FromNode();
+            Node t = e.ToNode();
+            If (n.isLeft && n.Match == NIL) {
+                If (t.Match == NIL) {
+                    t.Suitor = n;   // intended write-write conflict. 
+                                    // Only one will be make effect, though.
+                    finished &= False;  
+                }
+            }
+        }*/
 
         // Right node accepts only one and replies
         Foreach(t: G.Nodes)(!t.isLeft && t.Match == NIL) {

@@ -50,31 +50,22 @@ int populate(char *fileName, int* row[2]) {
     // for SSSP
     //int* edgeProp = new int [NumEdges + 1]();
     // For Conductance
-    //int* nodeProp = new int[NumNodes + 1];
-    //For random bi_partite
-    bool* nodeProp1 = new bool[NumNodes + 1];
-    int* nodeProp2 = new int[NumNodes + 1];
+    int* nodeProp = new int[NumNodes + 1];
     int* parent = new int[NumEdges + 1]();
     
     int i, j, k;
     // For v_cover
     //bool l;
     //For sssp, Conductance
-    //int l;
-    //For random bi_partite
-    bool l;
-    int r;
+    int l;
 
     //For Conductance
     std::string str;
     for (i = 0; i < NumNodes; i++) {
 
-        inputFile >> j >> str >> l >> r;
+        inputFile >> j >> str >> l;
         //printf("Node : %d, Prop = %d", i, l);
-        //nodeProp[j] = l;
-        //For random_bipartite
-        nodeProp1[j] = l;
-        nodeProp2[j] = r;
+        nodeProp[j] = l;
     }
 
     // For Conductance
@@ -130,14 +121,9 @@ int populate(char *fileName, int* row[2]) {
     //CUDA_ERR_CHECK;
     //root = 1;
     // For Conductance
-    //err = cudaMemcpy(member, nodeProp, (NumNodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
-    //CUDA_ERR_CHECK;
-    //num = 3;
-    //For random_bipartite_matching
-    err = cudaMemcpy(isLeft, nodeProp1, (NumNodes + 1) * sizeof(bool), cudaMemcpyHostToDevice);
+    err = cudaMemcpy(member, nodeProp, (NumNodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
     CUDA_ERR_CHECK;
-    err = cudaMemcpy(Match, nodeProp2, (NumNodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
-    CUDA_ERR_CHECK;
+    num = 3;
 
     err = cudaMemcpy(edgeFrom, parent, (NumEdges + 1) * sizeof(int), cudaMemcpyHostToDevice);
     CUDA_ERR_CHECK;
@@ -146,15 +132,11 @@ int populate(char *fileName, int* row[2]) {
         printf("%d ", parent[i]);
     }*/
     
-    //delete nodeProp;
-    //For random_bipartite
-    delete nodeProp1;
-    delete nodeProp2;
-    delete parent;
+    delete nodeProp;
     //printGraph(row);
-
     //printGraphOnDevice<<<1, 1>>>(G0, G1, NumNodes, NumEdges);
     //CUDA_ERR_CHECK;
+    delete parent;
    
     return 0;
 }

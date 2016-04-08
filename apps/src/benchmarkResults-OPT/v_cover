@@ -1,0 +1,21 @@
+    Graph                       GM_CUDA                    GM_OpenMP_1T     GM_OpenMP_32T
+1. soc-Epinions1        LoadingTime(ms) = 163.512833
+    NumNodes = 75887    ExecutionTime(ms) = 198509.3125
+    NumEdges = 508837   Return Value = 62465(Verified)
+
+3. soc-LiveJournal1         LoadingTime(ms) =                               Did not stop
+    NumNodes = 4847570      ExecutionTime(ms) =                             even after
+    NumEdges = 68993773     StoringTime(ms) =                               1000 minutes
+                            Return Value = Veri                             of CPU Time.
+
+4. soc-pokec-relationships: Pokec is the most p
+    NumNodes = 1632803      LoadingTime(ms) = 8
+    NumEdges = 30622564     ExecutionTime(ms) =
+                            StoringTime(ms) =  
+                            Return Value = Veri
+    
+5. com-orkut.ungraph        LoadingTime(ms) = 3
+    NumNodes = 3072626      ExecutionTime(ms) =
+    NumEdges = 117185083    StoringTime(ms) =  
+                            Return Value = Veri
+

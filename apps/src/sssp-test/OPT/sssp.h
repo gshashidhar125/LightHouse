@@ -1,5 +1,5 @@
-#ifndef GM_GENERATED_CUDA_RANDOM_BIPARTITE_MATCHING_H
-#define GM_GENERATED_CUDA_RANDOM_BIPARTITE_MATCHING_H
+#ifndef GM_GENERATED_CUDA_SSSP_H
+#define GM_GENERATED_CUDA_SSSP_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,20 +10,18 @@
 int t0;   \
 
 #define kernelMacro1 \
-int n, EdgeIter, t;   \
+int n, EdgeIter, s, e, localExpr = 2147483647, expr;   \
 
 #define kernelMacro2 \
-int t2, n3;   \
+int t4;   \
 
-#define kernelMacro3 \
-int n4, t5;   \
-
-#define random_bipartite_matchingMacro \
+#define ssspMacro \
 int*  G0, * G1 , NumNodes , NumEdges , *edgeFrom;   \
-bool* isLeft;   \
-int* Match, *Suitor;   \
-int h_count;   \
-bool h_finished;   \
+int32_t* dist, *dist_nxt;   \
+int32_t* len;   \
+int root;   \
+bool* updated, *updated_nxt;   \
+bool fin, h___E8;   \
 bool* host_threadBlockBarrierReached;  \
 cudaError_t err;  \
 cudaEvent_t start, stop;
@@ -47,9 +45,8 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 gpuErrchk(cudaPeekAtLastError());\
 gpuErrchk(cudaDeviceSynchronize());\
 
-#define random_bipartite_matchingMacroGPU \
-__device__ int count;   \
-__device__ bool finished;   \
+#define ssspMacroGPU \
+__device__ bool __E8;   \
 __device__ bool* gm_threadBlockBarrierReached;  \
 
 
