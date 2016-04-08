@@ -1268,6 +1268,8 @@ void gm_cuda_gen::generate_expr_builtin(ast_expr* i) {
     i->dump_tree(2);
     printf("\nEnded..\n\n");
     ast_expr_builtin* b = (ast_expr_builtin*)i;
+    std::list<ast_expr*> argsList;
+    std::list<ast_expr*>::iterator argsListIt;
     gm_builtin_def* def = b->get_builtin_def();
     std::string str, graphName;
     std::list<ast_expr*>::iterator itStart, itEnd;
@@ -1296,7 +1298,11 @@ void gm_cuda_gen::generate_expr_builtin(ast_expr* i) {
                 Body.push(str.c_str());
                 break;   
         case GM_BLTIN_NODE_TO_EDGE: 
-                Body.push("iter");
+                if (requiredEdgeFromArray()) {
+                    Body.push("EdgeIter");
+                } else {
+                    Body.push("iter");
+                }
                 break;     
         case GM_BLTIN_NODE_IS_NBR_FROM: 
                 Body.push("BUILTIN7");
@@ -1332,10 +1338,35 @@ void gm_cuda_gen::generate_expr_builtin(ast_expr* i) {
                 break;    
 
         case GM_BLTIN_EDGE_FROM: 
-                Body.push("BUILTIN10");
+                Body.push("edgeFrom[");
+                argsList = b->get_args();
+                argsListIt = argsList.begin();
+                for (; argsListIt != argsList.end(); argsListIt++) {
+                    generate_expr(*argsListIt);
+                }
+                Body.push("];");
                 break;        
         case GM_BLTIN_EDGE_TO: 
-                Body.push("BUILTIN11");
+                inArgs = currentProc->get_in_args();
+                for (It = inArgs.begin(); It != inArgs.end(); It++) {
+                    type = (*It)->get_type();
+                    idlist = (*It)->get_idlist();
+                    if (type->is_graph()) {
+                        for (int ii = 0; ii < idlist->get_length(); ii++) {
+                            id = idlist->get_item(ii);
+                            graphName = std::string(id->get_orgname());
+                            break;
+                        }
+                    }
+                }
+                str = graphName + "1[";
+                Body.push(str.c_str());
+                argsList = b->get_args();
+                argsListIt = argsList.begin();
+                for (; argsListIt != argsList.end(); argsListIt++) {
+                    generate_expr(*argsListIt);
+                }
+                Body.push("]");
                 break;          
 
         case GM_BLTIN_TOP_DRAND: 
@@ -2230,6 +2261,10 @@ std::string gm_cuda_gen::generate_newKernelFunction(ast_foreach* f) {
                 callStr.append("0, ");
                 callStr.append(id->get_orgname());
                 callStr.append("1, NumNodes, NumEdges");
+                if (requiredEdgeFromArray()) {
+                    Body.push(", int *edgeFrom");
+                    callStr.append(", edgeFrom");
+                }
                 continue;
             }else if (type->is_property()) {
                 ast_typedecl* targetType = type->get_target_type();
@@ -2535,6 +2570,9 @@ void gm_cuda_gen::generate_idlist(ast_idlist* idl) {
             Body.push_spc("1");
             Body.push_spc(", NumNodes");
             Body.push_spc(", NumEdges");
+            if (requiredEdgeFromArray()) {
+                Body.push(", *edgeFrom");
+            }
         }
         if (i < z - 1) Body.push_spc(',');
     }
@@ -2878,7 +2916,7 @@ void gm_cuda_gen::do_generate_user_main() {
          I != GPUVarList.end(); I++) {
         CUDAAllocateMemory(*I, true);
     }
-
+    
     GPUVarList = getGlobalScope()->getVarDecls();
     
     for (std::list<ast_vardecl*>::iterator I = GPUVarList.begin();
@@ -2886,6 +2924,11 @@ void gm_cuda_gen::do_generate_user_main() {
         CUDAAllocateMemory(*I, false);
     }
     
+    if (requiredEdgeFromArray()) {
+        Body.pushln("err = cudaMalloc((void **)&edgeFrom, (NumEdges + 1) * sizeof(int));");
+        Body.pushln("CUDA_ERR_CHECK;");
+    }
+
     std::string str = "bool* host_threadBlockBarrierReached;";
     str = "err = cudaMalloc((void **)&host_threadBlockBarrierReached, ";
     str += "10000 * sizeof(bool));";

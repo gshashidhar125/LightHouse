@@ -15,7 +15,7 @@ class gm_cuda_gen: public gm_backend, public gm_code_generator {
 
 public:
     gm_cuda_gen() :
-        gm_code_generator(Body), fname(NULL), dname(NULL), f_header(NULL), f_body(NULL), f_cudaBody(NULL), insideCudaKernel(false), currentProc(NULL), currentScope(NULL), globalScope(NULL), GPUMemoryScope(NULL), printingMacro(false) {
+        gm_code_generator(Body), fname(NULL), dname(NULL), f_header(NULL), f_body(NULL), f_cudaBody(NULL), insideCudaKernel(false), currentProc(NULL), currentScope(NULL), globalScope(NULL), GPUMemoryScope(NULL), printingMacro(false), needEdgeFromArray(false) {
 
         init();
     }
@@ -72,6 +72,7 @@ protected:
     std::list<scope*> kernelScopes;
     bool printingMacro;
     std::list<int>deviceFunctionsList;
+    bool needEdgeFromArray;
 
     bool open_output_files();
     void close_output_files(bool remove_files = false);
@@ -180,6 +181,12 @@ public:
     }
     virtual std::list<int> getDeviceFunctionList() {
         return deviceFunctionsList;
+    }
+    void setRequiredEdgeFromArray(bool s) {
+        needEdgeFromArray = s;
+    }
+    bool requiredEdgeFromArray() {
+        return needEdgeFromArray;
     }
 };
 

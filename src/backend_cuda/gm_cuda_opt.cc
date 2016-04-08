@@ -9,6 +9,7 @@
 #include "gm_argopts.h"
 #include "gm_backend_cuda_opt_steps.h"
 #include "gm_ind_opt_steps.h"
+#include "gm_builtin.h"
 #include <string>
 #include <stack>
 #include <fstream>
@@ -19,6 +20,7 @@ void gm_cuda_gen::init_opt_steps() {
     
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_dependencyAnalysis));
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_removeAtomicsForBoolean));
+    LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_loopColapse));
 /*
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_check_feasible));
     LIST.push_back(GM_COMPILE_STEP_FACTORY(gm_cuda_opt_defer));
@@ -1128,3 +1130,158 @@ void gm_cuda_opt_removeAtomicsForBoolean::process(ast_procdef* proc) {
     optHandler.removeReductionStmts();
 }
 
+typedef pair <ast_foreach*, ast_foreach* > loopPairInfo;
+
+class gm_loopColapseTransform : public gm_apply {
+
+    list<loopPairInfo> foreachInfo;
+    ast_foreach* currentForeachStmt, *innerForeachStmt;
+    bool insideForeach, findInnerForeach;
+public:
+    gm_loopColapseTransform() {
+        set_for_sent(true);
+        set_for_id(false);
+        set_separate_post_apply(true);
+        currentForeachStmt = NULL;
+        innerForeachStmt = NULL;
+        insideForeach = false;
+        findInnerForeach = false;
+    }
+
+    list<loopPairInfo> getForeachInfo() { return foreachInfo;   }
+
+    bool apply(ast_sent* s) {
+        if (s->get_nodetype() != AST_FOREACH)
+            return true;
+        ast_foreach* foreachStmt = (ast_foreach*)s;
+
+        if (!findInnerForeach && insideForeach)
+            return true;
+
+        if (findInnerForeach) {
+            printf("Loc 1\n");
+            innerForeachStmt = foreachStmt;
+            findInnerForeach = false;
+            return true;
+        }
+        printf("Loc 2\n");
+        currentForeachStmt = foreachStmt;
+        insideForeach = true;
+        findInnerForeach = true;
+        return true;
+    }
+
+    bool apply2(ast_sent* s) {
+    
+        printf("shashi\n");
+        if (s->get_nodetype() != AST_FOREACH)
+            return true;
+        ast_foreach* foreachStmt = (ast_foreach*)s;
+        if (currentForeachStmt == foreachStmt && innerForeachStmt != NULL) {
+            insideForeach = false;
+            findInnerForeach = false;
+            loopPairInfo newPair(currentForeachStmt, innerForeachStmt);
+            foreachInfo.push_back(newPair);
+            currentForeachStmt = NULL;
+            innerForeachStmt = NULL;
+            printf("DDDDDDDDDDDDDD");
+        } else if (innerForeachStmt == NULL) {
+            insideForeach = false;
+            findInnerForeach = false;
+        }
+        return true;
+    }
+
+    void transform(ast_foreach* outerFor, ast_foreach* innerFor) {
+
+        ast_expr* outerCond = outerFor->get_filter(), *innerCond = innerFor->get_filter();
+        ast_id* outerIter = outerFor->get_iterator(), *innerIter = innerFor->get_iterator();
+
+        ast_sent* newInnerSent = NULL, *newOuterSent = NULL;
+        if (innerCond != NULL) {
+            newInnerSent = ast_if::new_if(innerCond, innerFor->get_body(), NULL);
+        } else {
+            newInnerSent = innerFor->get_body();
+        }
+
+        gm_replace_sent(innerFor, newInnerSent);
+
+        if (outerCond != NULL) {
+            newOuterSent = ast_if::new_if(outerCond, outerFor->get_body(), NULL);
+        } else {
+            newOuterSent = outerFor->get_body();
+        }
+        
+        ast_id* edgeIter = ast_id::new_id("EdgeIter", 0, 0);
+
+        ast_foreach* transformedForeach = gm_new_foreach_after_tc(edgeIter, outerFor->get_source(), outerFor->get_body(), GMITER_EDGE_ALL);
+
+        ast_sent* foreachFirstStmt = NULL;
+        if (transformedForeach->get_body()->get_nodetype() == AST_SENTBLOCK) {
+            list<ast_sent*> sentList = ((ast_sentblock*)transformedForeach->get_body())->get_sents();
+            foreachFirstStmt = sentList.front();
+        } else {
+            foreachFirstStmt = transformedForeach->get_body();
+        }
+
+        expr_list* builtInCallArgs = new expr_list();
+        ast_id* edgeIterArg = edgeIter->copy(true);
+        ast_expr* arg1 = ast_expr::new_id_expr(edgeIterArg);
+        builtInCallArgs->LIST.push_back(arg1);
+
+        gm_builtin_def* def = BUILT_IN.find_builtin_def(edgeIter->getTypeSummary(), GM_BLTIN_EDGE_FROM, GMITER_EDGE_ALL);
+        ast_id* newEdgeIter = edgeIter->copy(true);
+        ast_expr_builtin* fromNode = ast_expr_builtin::new_builtin_expr(newEdgeIter, def, builtInCallArgs);
+        ast_assign* newIterAssign1 = ast_assign::new_assign_scala(outerIter, fromNode);
+        gm_add_sent_before(foreachFirstStmt, newIterAssign1, false);
+        newIterAssign1->set_parent(transformedForeach);
+        
+        printf("UUUUUUU");
+        newIterAssign1->dump_tree(2);
+        printf("UUUUUUU");
+
+        builtInCallArgs = new expr_list();
+        edgeIterArg = edgeIter->copy(true);
+        arg1 = ast_expr::new_id_expr(edgeIterArg);
+        builtInCallArgs->LIST.push_back(arg1);
+        
+        def = BUILT_IN.find_builtin_def(edgeIter->getTypeSummary(), GM_BLTIN_EDGE_TO, GMITER_EDGE_ALL);
+        newEdgeIter = edgeIter->copy(true);
+        fromNode = ast_expr_builtin::new_builtin_expr(newEdgeIter, def, builtInCallArgs);
+        newIterAssign1 = ast_assign::new_assign_scala(innerIter, fromNode);
+        gm_add_sent_before(foreachFirstStmt, newIterAssign1, false);
+        newIterAssign1->set_parent(transformedForeach);
+        
+        printf("UUUUUUU");
+        newIterAssign1->dump_tree(2);
+        printf("UUUUUUU");
+
+        //ast_foreach* transformedForeach = ast_foreach::new_foreach(edgeIter, 
+        //    outerFor->get_source(), outerFor->get_body(), GMITER_EDGE_ALL, outerCond);
+        gm_replace_sent(outerFor, transformedForeach);
+        printf("ZZZZZZ");
+        transformedForeach->dump_tree(2);
+        printf("ZZZZZZ");
+    }
+
+    void printForeachLoopsList() {
+        for (list<loopPairInfo>::iterator it = foreachInfo.begin(); it != foreachInfo.end(); it++) {
+            printf("First Loop:\n");
+            (*it).first->dump_tree(2);
+            printf("\nSecond Loop:\n");
+            (*it).second->dump_tree(2);
+        }
+    }
+};
+
+void gm_cuda_opt_loopColapse::process(ast_procdef* proc) {
+
+    gm_loopColapseTransform optHandler;
+    proc->traverse_both(&optHandler);
+    optHandler.printForeachLoopsList();
+    list<loopPairInfo> foreachInfo = optHandler.getForeachInfo();
+    for (list<loopPairInfo>::iterator it = foreachInfo.begin(); it != foreachInfo.end(); it++) {
+        optHandler.transform((*it).first, (*it).second);
+        CUDA_BE.setRequiredEdgeFromArray(true);
+    }
+}

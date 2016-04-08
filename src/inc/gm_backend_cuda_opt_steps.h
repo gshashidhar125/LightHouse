@@ -25,6 +25,7 @@ GM_COMPILE_STEP(gm_cuda_opt_entry_exit, "Add procedure enter and exit")
 GM_COMPILE_STEP(gm_cuda_opt_debug, "A dummy routine for debug")
 */
 GM_COMPILE_STEP(gm_cuda_opt_dependencyAnalysis, "Generate Dependency(Def/Use) Infomation")
+GM_COMPILE_STEP(gm_cuda_opt_loopColapse, "Replace a nested forEach loop going over neighbours of all the nodes to a forEach loop over edges")
 GM_COMPILE_STEP(gm_cuda_opt_removeAtomicsForBoolean, "Eliminate Boolean atomic reduction instructions")
 //-------------------------------------------
 // [Step 2]
