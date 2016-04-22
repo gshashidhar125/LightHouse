@@ -77,3 +77,9 @@ apps/src/random_bipartite_matching-test/random_bipartite_matching
 apps/src/sssp-test/sssp
 apps/src/triangle_counting-test/triangle_counting
 apps/src/v_cover-test/v_cover
+apps/src/cfg.png
+apps/src/conduct.png
+apps/src/conduct-test/OPT/conduct
+apps/src/sssp-test/OPT/sssp
+
+apps/src/testCoalesing/testCoalesing

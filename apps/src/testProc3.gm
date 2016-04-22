@@ -1,0 +1,12 @@
+Procedure Test (G: Graph, 
+    A: N_P<Int>, root: Node) {
+ 
+    N_P<Int> B;
+    Int rootValue;
+    Foreach (n: G.Nodes) {
+        Foreach (s: n.Nbrs) {
+            n.B = n.A + s.A;
+        }
+    }
+    rootValue = root.B;
+}

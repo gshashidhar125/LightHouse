@@ -17,7 +17,7 @@ void sssp_CPU(int* G0, int* G1, int * dist, int * len, int root) {
                 gm_numBlocksKernelParameter = gm_minGridSize;
             else
                 gm_numBlocksKernelParameter = gm_numBlocksStillToProcess;
-            forEachKernel0<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, dist, len, root, updated, dist_nxt, updated_nxt, gm_offsetIntoBlocks);
+            forEachKernel0<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, dist, len, root, updated, dist_nxt, updated_nxt, gm_offsetIntoBlocks);
             CUDA_ERR_CHECK;
             gm_numBlocksStillToProcess -= gm_minGridSize;
             gm_offsetIntoBlocks += gm_minGridSize * gm_blockSize;
@@ -29,14 +29,14 @@ void sssp_CPU(int* G0, int* G1, int * dist, int * len, int root) {
             err = cudaMemcpyToSymbol(__E8, &h___E8, sizeof(bool), 0, cudaMemcpyHostToDevice);
             CUDA_ERR_CHECK;
             cudaOccupancyMaxPotentialBlockSize(&gm_minGridSize, &gm_blockSize,forEachKernel1, 0, 0);
-            gm_gridSize = (NumNodes + 1 + gm_blockSize - 1) / gm_blockSize;
+            gm_gridSize = (NumEdges + gm_blockSize - 1) / gm_blockSize;
             gm_numBlocksStillToProcess = gm_gridSize, gm_offsetIntoBlocks = 0;
             while (gm_numBlocksStillToProcess > 0) {
                 if (gm_numBlocksStillToProcess > gm_minGridSize)
                     gm_numBlocksKernelParameter = gm_minGridSize;
                 else
                     gm_numBlocksKernelParameter = gm_numBlocksStillToProcess;
-                forEachKernel1<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, dist, len, root, updated, dist_nxt, updated_nxt, gm_offsetIntoBlocks);
+                forEachKernel1<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, dist, len, root, updated, dist_nxt, updated_nxt, gm_offsetIntoBlocks);
                 CUDA_ERR_CHECK;
                 gm_numBlocksStillToProcess -= gm_minGridSize;
                 gm_offsetIntoBlocks += gm_minGridSize * gm_blockSize;
@@ -49,7 +49,7 @@ void sssp_CPU(int* G0, int* G1, int * dist, int * len, int root) {
                     gm_numBlocksKernelParameter = gm_minGridSize;
                 else
                     gm_numBlocksKernelParameter = gm_numBlocksStillToProcess;
-                forEachKernel2<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, dist, len, root, dist_nxt, updated, updated_nxt, gm_offsetIntoBlocks);
+                forEachKernel2<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, dist, len, root, dist_nxt, updated, updated_nxt, gm_offsetIntoBlocks);
                 CUDA_ERR_CHECK;
                 gm_numBlocksStillToProcess -= gm_minGridSize;
                 gm_offsetIntoBlocks += gm_minGridSize * gm_blockSize;
@@ -78,7 +78,6 @@ int main(int argc, char* argv[])
         exit(1);
     }
     inputFile >> NumNodes >> NumEdges;
-    cudaSetDevice(7);
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
@@ -95,6 +94,8 @@ int main(int argc, char* argv[])
     err = cudaMalloc((void **)&updated, (NumNodes + 1) * sizeof(bool));
     CUDA_ERR_CHECK;
     err = cudaMalloc((void **)&updated_nxt, (NumNodes + 1) * sizeof(bool));
+    CUDA_ERR_CHECK;
+    err = cudaMalloc((void **)&edgeFrom, (NumEdges + 1) * sizeof(int));
     CUDA_ERR_CHECK;
     err = cudaMalloc((void **)&host_threadBlockBarrierReached, 10000 * sizeof(bool));
     CUDA_ERR_CHECK;
@@ -139,6 +140,8 @@ int main(int argc, char* argv[])
     err = cudaFree(updated);
     CUDA_ERR_CHECK;
     err = cudaFree(updated_nxt);
+    CUDA_ERR_CHECK;
+    err = cudaFree(host_threadBlockBarrierReached);
     CUDA_ERR_CHECK;
     free(h_G[0]);
     free(h_G[1]);

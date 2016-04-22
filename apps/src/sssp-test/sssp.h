@@ -5,21 +5,18 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <float.h>
-#include <limits.h>
-#include <cmath>
-#include <algorithm>
 
 #define kernelMacro0 \
 int t0;   \
 
 #define kernelMacro1 \
-int n, e, s, localExpr = 999999 , expr;   \
+int n, EdgeIter, s, e, localExpr = 999999 , expr;   \
 
 #define kernelMacro2 \
 int t4;   \
 
 #define ssspMacro \
-int*  G0, * G1 , NumNodes , NumEdges ;   \
+int*  G0, * G1 , NumNodes , NumEdges , *edgeFrom;   \
 int32_t* dist, *dist_nxt;   \
 int32_t* len;   \
 int root;   \

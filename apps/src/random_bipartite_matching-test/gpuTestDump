@@ -1,35 +1,35 @@
 soc-Epinions1.edges.random_bipartite_matching.with_header.edge
 Graph Population began
 Graph Population end
-Loading time(milliseconds)  = 149.570786
-Execution time(milliseconds)  = 2.848352
+Loading time(milliseconds)  = 192.286591
+Execution time(milliseconds)  = 2.490752
 Verification Success
-Return value = 21849
+Return value = 21852
 soc-LiveJournal1.txt.random_bipartite_matching.with_header.edge
 Graph Population began
 Graph Population end
-Loading time(milliseconds)  = 16910.646484
-Execution time(milliseconds)  = 185.644455
+Loading time(milliseconds)  = 17153.826172
+Execution time(milliseconds)  = 168.792679
 Verification Success
-Return value = 1792545
+Return value = 1792533
 soc-pokec-relationships1.edges.random_bipartite_matching.with_header.edge
 Graph Population began
 Graph Population end
-Loading time(milliseconds)  = 10955.710938
-Execution time(milliseconds)  = 58.992031
+Loading time(milliseconds)  = 10908.181641
+Execution time(milliseconds)  = 55.194366
 Verification Success
-Return value = 582749
+Return value = 582614
 com-orkut.ungraph.txt.random_bipartite_matching.with_header.edge
 Graph Population began
 Graph Population end
-Loading time(milliseconds)  = 27520.455078
-Execution time(milliseconds)  = 467.198212
+Loading time(milliseconds)  = 27486.199219
+Execution time(milliseconds)  = 445.219360
 Verification Success
-Return value = 1497944
+Return value = 1497935
 USA_ALL.txt.random_bipartite_matching.with_header.edge
 Graph Population began
 Graph Population end
-Loading time(milliseconds)  = 29794.634766
-Execution time(milliseconds)  = 133.145447
+Loading time(milliseconds)  = 30505.966797
+Execution time(milliseconds)  = 75.393921
 Verification Success
-Return value = 9430100
+Return value = 9429216

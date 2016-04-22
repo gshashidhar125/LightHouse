@@ -27,9 +27,9 @@ __global__ void forEachKernel1 (int *G0, int *G1, int NumNodes, int NumEdges, bo
                 if (Match[t] == -1)
                 {
                     Suitor[t] = n;
-                    atomicAnd((int *)&finished, (int)false);
+                    //atomicAnd((int *)&finished, (int)false);
                     //if (!false)
-                    //    finished = false;
+                        finished = false;
                 }
             }
         }
