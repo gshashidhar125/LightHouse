@@ -1,0 +1,20 @@
+Using Hybrid Approach
+1. Twitter
+    a. Full GPU:
+    file:/home/workspace/inputs/shashi/sssp/twitter_combined.sssp.totem.edge        benchmark:SSSP  vertices:568770232      edges:2420766   partitioning:RANDOM     platform:GPU    alpha:50        repeat:1        gpu_count:1     thread_count:32       thread_sched:GUIDED     thread_bind:false       gpu_graph_mem:DEVICE    gpu_par_randomized:false        sorted:false    edge_sort_key:id        edge_order:asc  separate_singletons:false       lambda:0        time_init:38118.35   time_par:10755.31        rmt_vertex:0    rmt_edge:0      beta:0  pid0:100,100,0,0
+    total   exec    init    comp    comm    finalize    cpu_comp    gpu_comp    gpu_total_comp  scatter gather  aggr        trv_edges   exec_rate
+    1705.17 376.13  3.44    353.66  22.46   5.45        0.00        353.66      353.66          0.00    0.00    1311.47     2420663     0.0064
+
+    file:/home/workspace/inputs/shashi/sssp/twitter_combined.sssp.totem.edge        benchmark:SSSP  vertices:568770232      edges:2420766   partitioning:RANDOM     platform:GPU    alpha:50        repeat:1        gpu_count:1     thread_count:32       thread_sched:GUIDED     thread_bind:false       gpu_graph_mem:DEVICE    gpu_par_randomized:false        sorted:false    edge_sort_key:id        edge_order:asc  separate_singletons:false       lambda:0        time_init:35967.19   time_par:10727.90        rmt_vertex:0    rmt_edge:0      beta:0  pid0:100,100,0,0
+    total   exec    init    comp    comm    finalize    cpu_comp    gpu_comp    gpu_total_comp  scatter gather  aggr        trv_edges   exec_rate
+    1693.03 402.76  3.40    380.25  22.51   5.41        0.00        380.25      380.25          0.00    0.00    1274.01     2420663     0.0060
+
+    b. CPU and GPU
+    file:/home/workspace/inputs/shashi/sssp/twitter_combined.sssp.totem.edge        benchmark:SSSP  vertices:568770232      edges:2420766   partitioning:RANDOM     platform:HYBRID alpha:50        repeat:1        gpu_count:1     thread_count:32       thread_sched:GUIDED     thread_bind:false       gpu_graph_mem:DEVICE    gpu_par_randomized:false        sorted:false    edge_sort_key:id        edge_order:asc  separate_singletons:false       lambda:50       time_init:77378.93   time_par:49126.62        rmt_vertex:0    rmt_edge:50     beta:3  pid0:50,49,0,25 pid1:50,51,0,25
+    total   exec    init    comp    comm    finalize    cpu_comp    gpu_comp    gpu_total_comp  scatter gather  aggr        trv_edges   exec_rate
+    1477.29 459.36  72.45   434.44  24.92   6.96        434.44      179.81      179.81          0.62    0.00    932.23      2420663     0.0053
+
+    c. CPU and GPU
+    file:/home/workspace/inputs/shashi/sssp/twitter_combined.sssp.totem.edge        benchmark:SSSP  vertices:568770232      edges:2420766   partitioning:RANDOM     platform:HYBRID alpha:50        repeat:1        gpu_count:1     thread_count:32       thread_sched:GUIDED     thread_bind:false       gpu_graph_mem:DEVICE    gpu_par_randomized:false        sorted:false    edge_sort_key:id        edge_order:asc  separate_singletons:false       lambda:60       time_init:65127.22   time_par:32516.30        rmt_vertex:0    rmt_edge:50     beta:3  pid0:50,49,0,25 pid1:50,51,0,25
+    total   exec    init    comp    comm    finalize    cpu_comp    gpu_comp    gpu_total_comp  scatter gather  aggr    trv_edges       exec_rate
+    1434.36 491.74  71.94   465.33  26.41   6.66        465.33      181.96      181.96          0.57    0.00    859.04  2420663         0.0049
