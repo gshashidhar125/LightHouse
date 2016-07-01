@@ -1,15 +1,16 @@
 #include <list>
 bool verifysssp(int* h_G[2]) {
 
+//    return false;
     int* h_dist = new int [NumNodes + 1]();
     int* length;// = new int [NumEdges + 1]();
     err = cudaMemcpy(h_dist, dist, (NumNodes + 1) * sizeof(int), cudaMemcpyDeviceToHost);
     CUDA_ERR_CHECK;
-    /*printf("Calculated Distances\n");
+    printf("Calculated Distances\n");
     for (int i = 0; i <= NumNodes; i++) {
         //printf("%d: %d\n", i, h_dist[i]);
         printf("%d\n", h_dist[i]);
-    }*/
+    }
     return false;
     err = cudaMemcpy(length, len, (NumEdges + 1) * sizeof(int), cudaMemcpyDeviceToHost);
     CUDA_ERR_CHECK;

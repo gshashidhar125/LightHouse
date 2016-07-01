@@ -32,6 +32,7 @@ int gm_minGridSize; /* The minimum grid size needed to achieve the*/ \
 int gm_gridSize;    /* The actual grid size needed, based on input size*/ \
 int gm_numBlocksStillToProcess, gm_offsetIntoBlocks; \
 int gm_numBlocksKernelParameter; \
+int *allocEdgesToThreads0, *allocEdgesToThreads1, numThreadsReq; 
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true) {
@@ -50,4 +51,6 @@ __device__ bool __E8;   \
 __device__ bool* gm_threadBlockBarrierReached;  \
 
 
+#define K1 3
+#define K2 4
 #endif

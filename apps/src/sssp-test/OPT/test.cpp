@@ -1,16 +1,20 @@
-#include "sssp.h"
-#include "sssp.cu"
-#include <fstream>
-#include <stdio.h>
 #include <time.h>
+#include <stdlib.h>
+#include <fstream>
 
-ssspMacro;
-#include "graph.h"
-#include "verify_sssp.h"
-
+using namespace std;
+int*  G0, * G1 , NumNodes , NumEdges , *edgeFrom;
+int* dist, *dist_nxt;
+int* len;   
+int root;   
+bool* updated, *updated_nxt;   
+bool fin, h___E8;   
+bool* host_threadBlockBarrierReached;  
+#define K1 10
+#define K2 1
 void allocateThreads(int* h_G[2]) {
     int maxThreadsPerBlock =  1024;//prop.maxThreadsPerBlock;
-    numThreadsReq = (NumEdges - 1) / (K1 + K2) + 1;
+    int numThreadsReq = (NumEdges - 1) / (K1 + K2) + 1;
     int numBlocks = (numThreadsReq - 1) / maxThreadsPerBlock + 1;
     
     int *h_allocEdgesToThreads0, *h_allocEdgesToThreads1;
@@ -117,28 +121,16 @@ void allocateThreads(int* h_G[2]) {
     }
     h_allocEdgesToThreads0[currentThread] = threadIndex;
 
-    /*printf("ALlocated Edges per thread");
+    printf("ALlocated Edges per thread");
     for (int i = 0; i < numThreadsReq; i++) {
         printf("Thread: %d ## Allocated Edges = ", i);
         for (int j = h_allocEdgesToThreads0[i]; j < h_allocEdgesToThreads0[i + 1]; j++) {
             printf("%d ", h_allocEdgesToThreads1[j]);
         }
         printf("\n");
-    }*/
-
-    err = cudaMalloc((void **)&allocEdgesToThreads0, (numThreadsReq + 1) * sizeof(int));
-    CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&allocEdgesToThreads1, (NumEdges + 1) * sizeof(int));
-    CUDA_ERR_CHECK;
-    err = cudaMemcpy(allocEdgesToThreads0, h_allocEdgesToThreads0, (numThreadsReq + 1) * sizeof(int), cudaMemcpyHostToDevice);
-    CUDA_ERR_CHECK;
-    err = cudaMemcpy(allocEdgesToThreads1, h_allocEdgesToThreads1, (NumEdges + 1) * sizeof(int), cudaMemcpyHostToDevice);
-    CUDA_ERR_CHECK;
-
-    //printf("Device print Allocated Edges per thread\n");
-    //printAllocThreads<<<numBlocks, maxThreadsPerBlock>>>(numThreadsReq, allocEdgesToThreads0, allocEdgesToThreads1);
+    }
 }
-
+/*
 void sssp_CPU(int* G0, int* G1, int * dist, int * len, int root) {
 
     {
@@ -170,7 +162,7 @@ void sssp_CPU(int* G0, int* G1, int * dist, int * len, int root) {
                     gm_numBlocksKernelParameter = gm_minGridSize;
                 else
                     gm_numBlocksKernelParameter = gm_numBlocksStillToProcess;
-                forEachKernel1<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, dist, len, root, updated, dist_nxt, updated_nxt, gm_offsetIntoBlocks, allocEdgesToThreads0, allocEdgesToThreads1, numThreadsReq);
+                forEachKernel1<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, dist, len, root, updated, dist_nxt, updated_nxt, gm_offsetIntoBlocks);
                 CUDA_ERR_CHECK;
                 gm_numBlocksStillToProcess -= gm_minGridSize;
                 gm_offsetIntoBlocks += gm_minGridSize * gm_blockSize;
@@ -193,10 +185,88 @@ void sssp_CPU(int* G0, int* G1, int * dist, int * len, int root) {
             fin =  !h___E8;
         }
     }
+}*/
+
+int populate(char *fileName, int* row[2]) {
+
+    ifstream inputFile;
+    inputFile.open(fileName);
+    if (!inputFile.is_open()){
+        printf("invalid file");
+        exit(1);
+    }
+
+    inputFile >> NumNodes >> NumEdges;
+ 
+    row[0] = new int [NumNodes + 2]();
+    row[1] = new int [NumEdges + 1]();
+    
+    // for v_cover
+    //bool* edgeProp = new bool [NumEdges + 1]();
+    // for SSSP
+    int* edgeProp = new int [NumEdges + 1]();
+    int* parent = new int[NumEdges + 1]();
+    
+    int i, j, k;
+    // For v_cover
+    //bool l;
+    //For sssp
+    int l;
+
+    i = NumEdges;
+    int lastj = 0, currentIndex = 0;
+    while(i > 0) {
+
+        // For v_cover, SSSP
+        inputFile >> j >> k >> l;
+        while (lastj <= j || lastj == 0) {
+            if (lastj == 0) {
+                row[0][0] = currentIndex;
+                row[0][1] = currentIndex;
+            }else {
+                row[0][lastj] = currentIndex;
+            }
+            lastj++;
+        }
+        row[1][currentIndex] = k;
+        parent[currentIndex] = j;
+        // For v_cover
+        // For SSSP
+        edgeProp[currentIndex] = l;
+        currentIndex ++;
+        i--;
+    }
+    // Sentinel node just points to the end of the last node in the graph
+    while (lastj <= NumNodes + 1) {
+        row[0][lastj] = currentIndex;
+        lastj++;
+    }
+    /*for (i = 0; i <= NumNodes + 1; i++)
+        printf("Vertex: %d = %d\n", i, row[0][i]);
+ 
+    printf("Second Array:\n");
+    for (i = 0; i <= NumEdges; i++)
+        printf("Edges: Index: %d, Value = %d\n", i, row[1][i]);*/
+
+    // For v_cover
+    //err = cudaMemcpy(selectEdge, edgeProp, (NumEdges + 1) * sizeof(bool), cudaMemcpyHostToDevice);
+    //CUDA_ERR_CHECK;
+    // For SSSP
+    root = 1;
+    
+    /*printf("\n Parent Array:\n");
+    for (int i = 0; i <= NumEdges; i++) {
+        printf("%d ", parent[i]);
+    }*/
+    delete edgeProp;
+    //printGraph(row);
+    //printGraphOnDevice<<<1, 1>>>(G0, G1, NumNodes, NumEdges);
+    //CUDA_ERR_CHECK;
+    delete parent;
+   
+    return 0;
 }
 
-
-using namespace std;
 // sssp -? : for how to run generated main program
 int main(int argc, char* argv[])
 {
@@ -211,95 +281,21 @@ int main(int argc, char* argv[])
         printf("invalid file");
         exit(1);
     }
-    cudaSetDevice(7);
     inputFile >> NumNodes >> NumEdges;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start, 0);
-    err = cudaMalloc((void **)&G0, (NumNodes + 2) * sizeof(int));
-    CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&G1, (NumEdges + 1) * sizeof(int));
-    CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&dist, (NumNodes + 1) * sizeof(int));
-    CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&dist_nxt, (NumNodes + 1) * sizeof(int));
-    CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&len, (NumEdges + 1) * sizeof(int));
-    CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&updated, (NumNodes + 1) * sizeof(bool));
-    CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&updated_nxt, (NumNodes + 1) * sizeof(bool));
-    CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&edgeFrom, (NumEdges + 1) * sizeof(int));
-    CUDA_ERR_CHECK;
-    err = cudaMalloc((void **)&host_threadBlockBarrierReached, 10000 * sizeof(bool));
-    CUDA_ERR_CHECK;
-    err = cudaMemset(host_threadBlockBarrierReached, 0x0, 10000 * sizeof(bool));
-    CUDA_ERR_CHECK;
-    err = cudaMemcpyToSymbol(gm_threadBlockBarrierReached, &host_threadBlockBarrierReached, sizeof(bool *), 0, cudaMemcpyHostToDevice);
-    CUDA_ERR_CHECK;
     int* h_G[2];
     printf("Graph Population began\n");
     populate(argv[1], h_G);
     printf("Graph Population end\n");
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-    printf("Loading time(milliseconds)  = %f\n", elapsedTime);
-
-    double wall0 = 0;//gettimeofday();
-    double cpu0  = clock();
-
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start, 0);
-    
     allocateThreads(h_G);
+    //sssp_CPU(G0, G1, dist, len, root);
 
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-    
-    double wall1 = 0;//gettimeofday();
-    double cpu1  = clock();
-
-/*    printf("Wall Time = %d\n", wall1 - wall0);
-    printf("CPU Time  = %d\n", cpu1  - cpu0);
-*/
-    printf("Allocating Threads time(milliseconds)  = %f\n", elapsedTime);
-
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start, 0);
-    sssp_CPU(G0, G1, dist, len, root);
-
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-    printf("Execution time(milliseconds)  = %f\n", elapsedTime);
-    bool gm_verify = verifysssp(h_G);
+    bool gm_verify;// = verifysssp(h_G);
     if (!gm_verify) {
         printf("Verification Failed\n");
         return -1;
     } else {
         printf("Verification Success\n");
     }
-    err = cudaFree(G0);
-    CUDA_ERR_CHECK;
-    err = cudaFree(G1);
-    CUDA_ERR_CHECK;
-    err = cudaFree(dist);
-    CUDA_ERR_CHECK;
-    err = cudaFree(dist_nxt);
-    CUDA_ERR_CHECK;
-    err = cudaFree(len);
-    CUDA_ERR_CHECK;
-    err = cudaFree(updated);
-    CUDA_ERR_CHECK;
-    err = cudaFree(updated_nxt);
-    CUDA_ERR_CHECK;
-    err = cudaFree(host_threadBlockBarrierReached);
-    CUDA_ERR_CHECK;
     free(h_G[0]);
     free(h_G[1]);
 }
