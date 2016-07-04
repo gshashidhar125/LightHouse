@@ -33,24 +33,25 @@ __global__ void forEachKernel1 (int *G0, int *G1, int NumNodes, int NumEdges, in
     /*if (tId >= NumEdges) {
         return;
     }*/
-    if (tId < numThreadsReq/* && updated[edgeFrom[tId]]*/) {
-        for (EdgeIter = allocEdgesToThreads0[tId]; EdgeIter < allocEdgesToThreads0[tId + 1]; EdgeIter++) {
-//            EdgeIter = tId;
+    if (updated[edgeFrom[tId]] && tId < NumEdges/*numThreadsReq*/) {
+//        for (EdgeIter = allocEdgesToThreads0[tId]; EdgeIter < allocEdgesToThreads0[tId + 1]; EdgeIter++) {
+//        for (EdgeIter = tId * K1; EdgeIter < ((tId + 1) * K1) && EdgeIter < NumEdges; EdgeIter++) {
+            EdgeIter = tId;
             n = edgeFrom[EdgeIter];;
             s = G1[EdgeIter];
-            if (updated[n])
+//            if (updated[n])
             {
                 {
                     e = EdgeIter;
-                    localExpr = dist_nxt[s];
+//                    localExpr = dist_nxt[s];
                     expr = dist[n] + len[e];
                     atomicMin(&dist_nxt[s], expr);
-                    if (localExpr > expr) {
+/*                    if (localExpr > expr) {
                         updated_nxt[s] = true;
-                    }
+                    }*/
                 }
 //                updated[n] = false;
-            }
+//            }
         }
     }
 }
@@ -60,15 +61,18 @@ __global__ void forEachKernel2 (int *G0, int *G1, int NumNodes, int NumEdges, in
     /*if (tId >= NumNodes + 1) {
         return;
     }*/
-    if (tId <= NumNodes && dist_nxt[tId] < dist[tId]) {
+    if (dist_nxt[tId] < dist[tId] && tId <= NumNodes) {
     t4 = tId;
     {
         dist[t4] = dist_nxt[t4];
-        updated[t4] = updated_nxt[t4];
-        updated_nxt[t4] = false;
+//        updated[t4] = updated_nxt[t4];
+//        updated_nxt[t4] = false;
         updated[t4] = true;
-        if (updated[t4])
+//        if (updated[t4])
             __E8 = true;
     }
+    } else if (tId <= NumNodes) {
+        t4 = tId;
+        updated[t4] = false;
     }
 }

@@ -51,6 +51,6 @@ __device__ bool __E8;   \
 __device__ bool* gm_threadBlockBarrierReached;  \
 
 
-#define K1 3
+#define K1 2
 #define K2 4
 #endif

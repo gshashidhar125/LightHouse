@@ -10,7 +10,11 @@ ssspMacro;
 
 void allocateThreads(int* h_G[2]) {
     int maxThreadsPerBlock =  1024;//prop.maxThreadsPerBlock;
+#ifdef ALLOC_K2EXACTEDGES
     numThreadsReq = (NumEdges - 1) / (K1 + K2) + 1;
+#else
+    numThreadsReq = (NumEdges - 1) / (K1) + 1;
+#endif
     int numBlocks = (numThreadsReq - 1) / maxThreadsPerBlock + 1;
     
     int *h_allocEdgesToThreads0, *h_allocEdgesToThreads1;
@@ -103,6 +107,8 @@ void allocateThreads(int* h_G[2]) {
             }*/
         }
 //        threadIndex++;
+#ifdef ALLOC_K2EXACTEDGES
+// If K2 outgoing edges are not available, then select any edges for K2.
         if (j < K2) {
             for (; j < K2 && currentEdge < NumEdges;) {
                 if (!isEdgeAllocated[currentEdge]) {
@@ -113,9 +119,15 @@ void allocateThreads(int* h_G[2]) {
                 currentEdge++;
             }
         }
+#endif
         currentThread++;
     }
     h_allocEdgesToThreads0[currentThread] = threadIndex;
+#ifdef ALLOC_K2EXACTEDGES
+    ;
+#else
+    numThreadsReq = currentThread;
+#endif
 
     /*printf("ALlocated Edges per thread");
     for (int i = 0; i < numThreadsReq; i++) {
@@ -144,6 +156,7 @@ void sssp_CPU(int* G0, int* G1, int * dist, int * len, int root) {
     {
         fin = false;
         cudaOccupancyMaxPotentialBlockSize(&gm_minGridSize, &gm_blockSize,forEachKernel0, 0, 0);
+            gm_minGridSize = 1024;
         gm_gridSize = (NumNodes + 1 + gm_blockSize - 1) / gm_blockSize;
         gm_numBlocksStillToProcess = gm_gridSize, gm_offsetIntoBlocks = 0;
         while (gm_numBlocksStillToProcess > 0) {
@@ -163,19 +176,31 @@ void sssp_CPU(int* G0, int* G1, int * dist, int * len, int root) {
             err = cudaMemcpyToSymbol(__E8, &h___E8, sizeof(bool), 0, cudaMemcpyHostToDevice);
             CUDA_ERR_CHECK;
             cudaOccupancyMaxPotentialBlockSize(&gm_minGridSize, &gm_blockSize,forEachKernel1, 0, 0);
+            gm_minGridSize = 1024;
             gm_gridSize = (NumEdges + gm_blockSize - 1) / gm_blockSize;
             gm_numBlocksStillToProcess = gm_gridSize, gm_offsetIntoBlocks = 0;
+            int iteration = 0;
             while (gm_numBlocksStillToProcess > 0) {
                 if (gm_numBlocksStillToProcess > gm_minGridSize)
                     gm_numBlocksKernelParameter = gm_minGridSize;
                 else
                     gm_numBlocksKernelParameter = gm_numBlocksStillToProcess;
+                //printf("Kernel para = (%d, %d)\n", gm_numBlocksKernelParameter, gm_blockSize);
                 forEachKernel1<<<gm_numBlocksKernelParameter, gm_blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, dist, len, root, updated, dist_nxt, updated_nxt, gm_offsetIntoBlocks, allocEdgesToThreads0, allocEdgesToThreads1, numThreadsReq);
                 CUDA_ERR_CHECK;
                 gm_numBlocksStillToProcess -= gm_minGridSize;
                 gm_offsetIntoBlocks += gm_minGridSize * gm_blockSize;
+                iteration++;
             }
+            //printf("# Iterations = %d\n", iteration);
+            /*int blockSize = 1024;
+            int numBlocks = (NumEdges - 1) / blockSize + 1;
+            printf("Kernel para = (%d, %d)\n", numBlocks, blockSize);
+            forEachKernel1<<<numBlocks, blockSize>>>(G0, G1, NumNodes, NumEdges, edgeFrom, dist, len, root, updated, dist_nxt, updated_nxt, gm_offsetIntoBlocks, allocEdgesToThreads0, allocEdgesToThreads1, numThreadsReq);
+            CUDA_ERR_CHECK;*/
+
             cudaOccupancyMaxPotentialBlockSize(&gm_minGridSize, &gm_blockSize,forEachKernel2, 0, 0);
+            gm_minGridSize = 1024;
             gm_gridSize = (NumNodes + 1 + gm_blockSize - 1) / gm_blockSize;
             gm_numBlocksStillToProcess = gm_gridSize, gm_offsetIntoBlocks = 0;
             while (gm_numBlocksStillToProcess > 0) {
@@ -247,22 +272,21 @@ int main(int argc, char* argv[])
     cudaEventElapsedTime(&elapsedTime, start, stop);
     printf("Loading time(milliseconds)  = %f\n", elapsedTime);
 
-    double wall0 = 0;//gettimeofday();
-    double cpu0  = clock();
-
-    cudaEventCreate(&start);
+    clock_t cpuStart, cpuEnd;
+    cpuStart = clock();
+    /*cudaEventCreate(&start);
     cudaEventCreate(&stop);
-    cudaEventRecord(start, 0);
+    cudaEventRecord(start, 0);*/
     
-    allocateThreads(h_G);
+    numThreadsReq = (NumEdges - 1) / K1 + 1;
+    //allocateThreads(h_G);
 
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsedTime, start, stop);
     
-    double wall1 = 0;//gettimeofday();
-    double cpu1  = clock();
-
+    cpuEnd = clock();
+    elapsedTime = ((double) (cpuEnd - cpuStart)) / CLOCKS_PER_SEC;
 /*    printf("Wall Time = %d\n", wall1 - wall0);
     printf("CPU Time  = %d\n", cpu1  - cpu0);
 */
@@ -302,4 +326,5 @@ int main(int argc, char* argv[])
     CUDA_ERR_CHECK;
     free(h_G[0]);
     free(h_G[1]);
+    return 0;
 }

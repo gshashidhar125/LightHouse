@@ -10,11 +10,15 @@ int root;
 bool* updated, *updated_nxt;   
 bool fin, h___E8;   
 bool* host_threadBlockBarrierReached;  
-#define K1 10
-#define K2 1
+#define K1 3
+#define K2 4
 void allocateThreads(int* h_G[2]) {
     int maxThreadsPerBlock =  1024;//prop.maxThreadsPerBlock;
+#ifdef ALLOC_K2EXACTEDGES
     int numThreadsReq = (NumEdges - 1) / (K1 + K2) + 1;
+#else
+    int numThreadsReq = (NumEdges - 1) / (K1) + 1;
+#endif
     int numBlocks = (numThreadsReq - 1) / maxThreadsPerBlock + 1;
     
     int *h_allocEdgesToThreads0, *h_allocEdgesToThreads1;
@@ -107,6 +111,8 @@ void allocateThreads(int* h_G[2]) {
             }*/
         }
 //        threadIndex++;
+#ifdef ALLOC_K2EXACTEDGES
+// If K2 outgoing edges are not available, then select any edges for K2.
         if (j < K2) {
             for (; j < K2 && currentEdge < NumEdges;) {
                 if (!isEdgeAllocated[currentEdge]) {
@@ -117,9 +123,16 @@ void allocateThreads(int* h_G[2]) {
                 currentEdge++;
             }
         }
+#endif
         currentThread++;
     }
     h_allocEdgesToThreads0[currentThread] = threadIndex;
+#ifdef ALLOC_K2EXACTEDGES
+    ;
+#else
+    numThreadsReq = currentThread;
+#endif
+    printf("Allocated Threads = %d\n", numThreadsReq);
 
     printf("ALlocated Edges per thread");
     for (int i = 0; i < numThreadsReq; i++) {
