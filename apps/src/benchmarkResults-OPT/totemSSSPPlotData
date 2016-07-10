@@ -18,3 +18,19 @@ Using Hybrid Approach
     file:/home/workspace/inputs/shashi/sssp/twitter_combined.sssp.totem.edge        benchmark:SSSP  vertices:568770232      edges:2420766   partitioning:RANDOM     platform:HYBRID alpha:50        repeat:1        gpu_count:1     thread_count:32       thread_sched:GUIDED     thread_bind:false       gpu_graph_mem:DEVICE    gpu_par_randomized:false        sorted:false    edge_sort_key:id        edge_order:asc  separate_singletons:false       lambda:60       time_init:65127.22   time_par:32516.30        rmt_vertex:0    rmt_edge:50     beta:3  pid0:50,49,0,25 pid1:50,51,0,25
     total   exec    init    comp    comm    finalize    cpu_comp    gpu_comp    gpu_total_comp  scatter gather  aggr    trv_edges       exec_rate
     1434.36 491.74  71.94   465.33  26.41   6.66        465.33      181.96      181.96          0.57    0.00    859.04  2420663         0.0049
+
+
+
+Graph               Full-CPU        PartHighDegree  PartHighDegree      PartLowDegree       Full-GPU        Full-GPU        Hybrid_PartHigh         Hybrid_PartLow          
+                    (RandomPart)    NodesOnCPU      NodesOnCPUPartition NodesOnCPUPartition (RandomPart)    Partition       DegreeNodesOnCPU        DegreeNodesOnCPU
+                                                    ForSingleton        ForSingleton                        ForSingleton    PartitionForSingleton   PartitionForSingleton
+soc-Epinions
+soc-LiveJournal     710.03          964.06          840.62              660.01              107.43          108.90          113.27                  112.57
+soc-pokec           360.00          390.01          359.99              369.29              53.49           53.10           57.11, 51.72(0% in CPU)*56.97, 56.32(0% in CPU)*
+com-orkut           350.00          360.00          380.02              339.91              64.59           64.12           69.78                   69.14
+twitter             744.05          583.66          200.28              53.54               376.04          376.21          6.15(0% in CPU)*        6.05(0% in CPU)*
+USA_ALL             170702.34       156579.19       164089.67           160519.99           208200.68       208301.14       207683.80               208308.30(0%), 190159.65(20%)
+                    178288.92(60%CPU, PartitionHighDegreeNodesOnCPU)
+                    141703.75(80%CPU, PartitionLowDegreeNodesOnCPU, PartitionForSingleton)
+                    77722.82(100%CPU, PartitionLowDegreeNodesOnCPU)
+                    77166.91(100%CPU, PartitionHighDegreeNodesOnCPU)

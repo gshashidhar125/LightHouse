@@ -1,0 +1,70 @@
+d = 0.85, e = 0.0001, maxIter = 40
+Graph               OMP-1T      OMP-4T      OMP-8T      OMP-16T     OMP-32T     OMP-64T     CUDA       CUDA(65535 Blocks)   CUDA-OPT        CUDA-OPT(65535 Blocks)
+
+Epinions(Float)     139.858     135.950     103.356     78.366      1278.771    75.505      127.376511  83.415619           24.111391       15.604224
+Epinions(Double)    148.527     128.482     93.413      69.727      1266.946    68.194
+
+LiveJournal(Float)  21119.713   11526.294   6279.690    4000.209    4098.793    3077.887    2076187.00  7002.395020         2602.441895     2685.434082
+LiveJournal(Double) 27134.177   11639.270   6735.583    4124.089    4219.270    3442.393
+
+Pokec(Float)        8563.090    5340.340    3215.096    2012.191    3788.953    1726.962    2188.33960  1153.051025         1243.505371     837.779236
+Pokec(Double)       9829.567    5389.410    3295.125    2597.646    2937.591    1796.180
+
+Orkut(Float)        20945.444   12952.208   7856.157    5132.243    4767.386    4085.000    11030.2021  2788.068848         2561.243896     1605.533447
+Orkut(Double)       24174.879   13352.709   8012.861    4683.445    4490.386    4524.178
+
+Twitter(Float)      5099.276    2378.634    2151.529    1594.078    1471.494    1897.920    9035.955078 5329.922363         5888.396973     5118.066406
+Twitter(Double)     8739.959    3497.109    3517.850    3372.435    3275.529    3141.896
+
+USA(Float)          26886.100   19730.183   10672.233   6844.931    6787.908    5269.486    5520.0673   4584.750488         5973.969727     4587.162598
+USA(Double)         31169.221   16325.028   10347.538   7117.714    6665.892    4976.426
+
+
+1. soc-Epinions
+Openmp(1Thread)-Openmp(NThreads): -Float - Max Error = 6.332000e-08(64 Threads), Min Error = 2.692000e-08(8 Threads)
+                                  -Double - Max Error = 0, Min Error = 0
+GPU-Openmp(1Thread)-Float:  -FullOccupancy  - Max Error = 9.20837e-06(NO-OPT), Min Error = 9.182900e-06(OPT)
+                            -MaxBlocks      - Max Error = 9.223940e-06(NO-OPT), Min Error = 9.177710e-06(OPT)
+GPU-Openmp(1Thread)-Double: -FullOccupancy  - Max Error = 
+                            -MaxBlocks      - Max Error =
+
+2. LiveJournal
+Openmp(1Thread)-Openmp(NThreads): -Float - Max Error = 1.985620e-08(64 Threads), Min Error = 1.257310e-08(4 Threads)
+                                  -Double - Max Error = 0, Min Error = 0
+GPU-Openmp(1Thread)-Float:  -FullOccupancy  - Max Error = 1.83203e-07(NO-OPT), Min Error = 1.800422e-07(OPT)
+                            -MaxBlocks      - Max Error = 1.811352e-07(NO-OPT), Min Error = 1.800681e-07(OPT)
+GPU-Openmp(1Thread)-Double: -FullOccupancy  - Max Error = 
+                            -MaxBlocks      - Max Error =
+
+3. soc-pokec
+Openmp(1Thread)-Openmp(NThreads): -Float - Max Error = 1.961230e-08(64 Threads), Min Error = 1.017810e-08(4 Threads)
+                                  -Double - Max Error = 0, Min Error = 0
+GPU-Openmp(1Thread)-Float:  -FullOccupancy  - Max Error = 5.174566e-07(NO-OPT), Min Error = 5.166713e-07(OPT)
+                            -MaxBlocks      - Max Error = 5.166097e-07(NO-OPT), Min Error = 5.165385e-07(OPT)
+GPU-Openmp(1Thread)-Double: -FullOccupancy  - Max Error = 
+                            -MaxBlocks      - Max Error =
+
+4. com-orkut
+Openmp(1Thread)-Openmp(NThreads): -Float - Max Error = 1.532130e-08(64 Threads), Min Error = 1.003750e-08(4 Threads)
+                                  -Double - Max Error = 0, Min Error = 0
+GPU-Openmp(1Thread)-Float:  -FullOccupancy  - Max Error = 1.607677e-07(NO-OPT), Min Error = 1.606421e-07(OPT)
+                            -MaxBlocks      - Max Error = 1.609695e-07(NO-OPT), Min Error = 1.609190e-07(OPT)
+GPU-Openmp(1Thread)-Double: -FullOccupancy  - Max Error = 
+                            -MaxBlocks      - Max Error =
+
+5. Twitter
+Openmp(1Thread)-Openmp(NThreads): -Float - Max Error = 5.650000e-13(32 Threads), Min Error = 1.730000e-13(4 Threads)
+                                  -Double - Max Error = 0, Min Error = 0
+GPU-Openmp(1Thread)-Float:  -FullOccupancy  - Max Error = 7.737000e-12(OPT), Min Error = 2.901000e-12(NO-OPT)
+                            -MaxBlocks      - Max Error = 5.516000e-12(OPT), Min Error = 4.136000e-12(NO-OPT)
+GPU-Openmp(1Thread)-Double: -FullOccupancy  - Max Error = 
+                            -MaxBlocks      - Max Error =
+
+6. USA_ALL
+Openmp(1Thread)-Openmp(NThreads): -Float - Max Error = 5.304900e-09(64 Threads), Min Error = 3.040600e-09(4 Threads)
+                                  -Double - Max Error = 0, Min Error = 0
+GPU-Openmp(1Thread)-Float:  -FullOccupancy  - Max Error = 9.153810e-08(NO-OPT), Min Error = 9.132260e-08(OPT)
+                            -MaxBlocks      - Max Error = 9.151270e-08(NO-OPT), Min Error = 9.132530e-08(OPT)
+GPU-Openmp(1Thread)-Double: -FullOccupancy  - Max Error = 
+                            -MaxBlocks      - Max Error =
+
