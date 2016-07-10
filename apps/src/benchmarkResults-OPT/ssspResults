@@ -1,0 +1,25 @@
+    Graph       OMP-1T      OMP-4T      OMP-8T      OMP-16T     OMP-64T         CUDA        CUDA-OPT        CUDA-OPT(With 65535 Blocks)     CUDA-K1_K2_Par(3-4)         LoneStarSSSPNormal  WorklistC       WorklistN
+Epinions       10.988      6.836       4.063       3.871       17.509       13.594624       4.895680        1.265600                        7.054784(20.368641)         54.455996           14.077902       0.968933
+Twitter        1786.958    2605.790    1947.478    1782.502    1806.538     3178.730469     863.278870      81.820541 (1024 Blocks)         581.927979(1278.655029)     Gave Error while running
+LiveJournal    1346.524    1078.071    623.427     378.231     1631.644     1192.030640     937.192383      198.696838                      2372.005859(3028.859375)    1625.463963         429.929018      2571.768045
+Pokec          1073.046    563.072     309.729     183.477     815.716      422.983185      366.331329      102.263069                      811.501282(1105.063232)     522.492886          197.219849      1398.348093
+Orkut          3779.410    1315.997    720.798     475.061     1739.185     2394.630371     1268.330322     296.804901                      2874.639160(2936.739746)    2358.501911         1028.109074     6442.398071
+USA            2100000      1589370.431 1010388.657 614275.430  2367526.252  693682.687500  476444.718750   75102.242188                    929346.687500(1338.960815)  126757.005930       80016.923904    350266.055107
+
+
+#################
+TOTEM Test Runs(VERIFICATION COULD NOT BE DONE)
+Graph               Full-CPU        PartHighDegree  PartHighDegree      PartLowDegree       Full-GPU        Full-GPU        Hybrid_PartHigh         Hybrid_PartLow          
+                    (RandomPart)    NodesOnCPU      NodesOnCPUPartition NodesOnCPUPartition (RandomPart)    Partition       DegreeNodesOnCPU        DegreeNodesOnCPU
+                                                    ForSingleton        ForSingleton                        ForSingleton    PartitionForSingleton   PartitionForSingleton
+Epinions            200.75          200.00          239.98              220.00              3.88            4.09            4.19(0% in CPU)*        4.36(0% in CPU)*
+Twitter             744.05          583.66          200.28              53.54               376.04          376.21          6.15(0% in CPU)*        6.05(0% in CPU)*
+LiveJournal         710.03          964.06          840.62              660.01              107.43          108.90          113.27                  112.57
+Pokec               360.00          390.01          359.99              369.29              53.49           53.10           57.11, 51.72(0% in CPU)*56.97, 56.32(0% in CPU)*
+Orkut               350.00          360.00          380.02              339.91              64.59           64.12           69.78                   69.14
+USA_ALL             170702.34       156579.19       164089.67           160519.99           208200.68       208301.14       207683.80               208308.30(0%), 190159.65(20%)
+                    178288.92(60%CPU, PartitionHighDegreeNodesOnCPU)
+                    141703.75(80%CPU, PartitionLowDegreeNodesOnCPU, PartitionForSingleton)
+                    77722.82(100%CPU, PartitionLowDegreeNodesOnCPU)
+                    77166.91(100%CPU, PartitionHighDegreeNodesOnCPU)
+################

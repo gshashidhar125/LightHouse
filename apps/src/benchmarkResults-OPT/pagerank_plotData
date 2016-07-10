@@ -1,34 +1,6 @@
 Graph        OMP-1T      OMP-4T      OMP-8T     OMP-16T     OMP-32T     OMP-64T     CUDA            CUDA(65535 Blocks) 
-
-d = 1, e = 3, maxIter = 40
 Epinions     48.213     15.483      9.033       6.207       1259.241    27.959      152.114014      138.320923
-Twitter
 LiveJournal  11818.827  3847.073    2094.394    1405.006    2148.055    1089.304    7295.690430     2889.714355
 Pokec        6267.916   1512.817    945.834     542.919     1469.391    458.788     2392.828125     1342.125977
 Orkut        10724.197  3358.526    1726.197    1170.355    1558.194    969.783     5005.433594     3034.122070
 USA          14312.108  5278.972    3259.072    2247.463    3215.414    1812.580    5455.329590     4227.008301
-
-
-#################
-Totem Pagerank
-Graph               Full-CPU        PartHighDegree  PartHighDegree      PartLowDegree       Full-GPU        Full-GPU        Hybrid_PartHigh         Hybrid_PartLow          
-                    (RandomPart)    NodesOnCPU      NodesOnCPUPartition NodesOnCPUPartition (RandomPart)    Partition       DegreeNodesOnCPU        DegreeNodesOnCPU
-                                                    ForSingleton        ForSingleton                        ForSingleton    PartitionForSingleton   PartitionForSingleton
-Epinions            152.98          99.96           SEG_Fault           SEG_Fault           2.36            2.36            119.15                  119.16
-Twitter             7718.44         7816.78         SEG_Fault           SEG_Fault           70785.08        70805.73        807.04                  818.00
-LiveJournal         273.08          282.22          SEG_Fault           SEG_Fault           206.49          206.38          220.57                  3325.54
-Pokec               111.69          139.22          SEG_Fault           SEG_Fault           102.10          102.12          129.39                  1129.85
-Orkut               355.44          382.85          SEG_Fault           SEG_Fault           305.34          305.22          326.72                  2288.48
-USA_ALL             1323.35         1527.44         1235.15             1221.22             3954.03         3928.72         3959.90                 134341.58
-#################
-Propogate Version
-Graph               OMP-1T      OMP-4T      OMP-8T      OMP-16T     OMP-32T     OMP-64T     CUDA       CUDA(65535 Blocks)   CUDA-OPT        CUDA-OPT(65535 Blocks)
-d = 0.85, e = 0.0001, maxIter = 40
-
-Epinions(Float)     139.858     135.950     103.356     78.366      1278.771    75.505      127.376511  83.415619           24.111391       15.604224
-Twitter(Float)      5099.276    2378.634    2151.529    1594.078    1471.494    1897.920    9035.955078 5329.922363         5888.396973     5118.066406
-LiveJournal(Float)  21119.713   11526.294   6279.690    4000.209    4098.793    3077.887    2076187.00  7002.395020         2602.441895     2685.434082
-Pokec(Float)        8563.090    5340.340    3215.096    2012.191    3788.953    1726.962    2188.33960  1153.051025         1243.505371     837.779236
-Orkut(Float)        20945.444   12952.208   7856.157    5132.243    4767.386    4085.000    11030.2021  2788.068848         2561.243896     1605.533447
-USA(Float)          26886.100   19730.183   10672.233   6844.931    6787.908    5269.486    5520.0673   4584.750488         5973.969727     4587.162598
-
